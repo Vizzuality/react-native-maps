@@ -11,9 +11,9 @@ import MapView, { MAP_TYPES, PROVIDER_DEFAULT } from 'react-native-maps';
 const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
-const LATITUDE = 37.78825;
-const LONGITUDE = -122.4324;
-const LATITUDE_DELTA = 0.0922;
+const LATITUDE = -9.020726;
+const LONGITUDE = -52.467347;
+const LATITUDE_DELTA = 40.1922;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 class CustomTiles extends React.Component {
@@ -42,7 +42,7 @@ class CustomTiles extends React.Component {
       <View style={styles.container}>
         <MapView
           provider={this.props.provider}
-          mapType={this.mapType}
+          mapType="hybrid"
           style={styles.map}
           initialRegion={region}
         >
