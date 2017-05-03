@@ -3,6 +3,7 @@ package com.airbnb.android.react.maps;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -60,33 +61,39 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 height = image.getHeight();
                 width = image.getWidth();
 
-                Bitmap bmpSephia = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-                /*Canvas canvas = new Canvas(bmpSephia);
-                Paint paint = new Paint();
-                paint.setAntiAlias(true);
+                Bitmap intermediateBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                int red, green, blue, pixel, alpha;
+                int[] pixels = new int[width * height];
+                image.getPixels(pixels, 0, width, 0, 0, width, height);
+                for (int i = 0; i < pixels.length; i++) {
+                    pixel = pixels[i];
 
-                canvas.drawBitmap(image, 0, 0, paint);*/
-                /*
-                for(int e=0; e < width; e++) {
-                    for(int f=0; f < height; f++) {
-                        c = image.getPixel(e, f);
-                        int day = Color.red(c) * 255 + Color.green(c);
+                    red = (pixel >> 16) & 0xFF;
+                    green = (pixel >> 8) & 0xFF;
+                    blue = pixel & 0xFF;
 
-                        if (day > 0 ) {
-                            r = 220;
-                            g = 102;
-                            b = 153;
+                    int day = red * 255 + green;
 
-                            bmpSephia.setPixel(e, f, Color.rgb(r, g, b));
-                        } else {
-                            bmpSephia.setPixel(e, f, Color.argb(0, 0, 0 ,0));
-                        }
+                    if (red > 255)
+                        red = 255;
+                    if (green > 255)
+                        green = 255;
+
+                    if (day > 0) {
+                        red = 220;
+                        green = 102;
+                        blue = 153;
+                        alpha = 255;
+                    } else {
+                        alpha = 0;
                     }
-                }*/
-
-
+                        
+                    pixels[i] = Color.argb(alpha, red, green, blue);
+                }
+                intermediateBitmap.setPixels(pixels, 0, width, 0, 0, width, height);        
+                
                 stream = new ByteArrayOutputStream();
-                image.compress(Bitmap.CompressFormat.PNG, 0, stream);
+                intermediateBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
                 bitmapData = stream.toByteArray();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
