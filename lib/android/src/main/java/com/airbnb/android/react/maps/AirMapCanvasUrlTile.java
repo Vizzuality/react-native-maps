@@ -43,14 +43,11 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 zoomCord = maxZoom;
             }
 
-
-
             Bitmap.Config conf = Bitmap.Config.ARGB_8888;
-            Bitmap coordTile = Bitmap.createBitmap(w, h, conf);
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            //coordTile.compress(Bitmap.CompressFormat.PNG, 100, stream);
             byte[] bitmapData = stream.toByteArray();
             Uri.Builder builder = new Uri.Builder();
+
             builder.scheme("http")
                     .authority("wri-tiles.s3.amazonaws.com")
                     .appendPath("glad_prod")
@@ -59,8 +56,6 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     .appendPath(String.valueOf(xCord))
                     .appendPath(String.valueOf(yCord));
             String providerUrl = builder.build().toString() + ".png";
-
-            Log.d("Tiles", providerUrl);
 
             int srcX = 0;
             int srcY = 0;
