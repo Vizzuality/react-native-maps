@@ -6,8 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.util.Log;
-import android.widget.ImageView;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Tile;
@@ -16,9 +16,8 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.lang.Math;
 
@@ -37,7 +36,13 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             int xCord = x;
             int yCord = y;
             int zoomCord = zoom;
-            
+            int srcX = 0;
+            int srcY = 0;
+            int srcW = w;
+            int srcH = h;
+            int scaleSize = 1;
+            boolean online = true;
+
             if (zoom > maxZoom) {
                 xCord = (int)(x / (Math.pow(2, zoom - maxZoom)));
                 yCord = (int)(y / (Math.pow(2, zoom - maxZoom)));
@@ -49,20 +54,40 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             byte[] bitmapData = stream.toByteArray();
             Uri.Builder builder = new Uri.Builder();
 
-            builder.scheme("http")
-                    .authority("wri-tiles.s3.amazonaws.com")
-                    .appendPath("glad_prod")
-                    .appendPath("tiles")
-                    .appendPath(String.valueOf(zoomCord))
-                    .appendPath(String.valueOf(xCord))
-                    .appendPath(String.valueOf(yCord));
-            String providerUrl = builder.build().toString() + ".png";
+            Bitmap image;
 
-            int srcX = 0;
-            int srcY = 0;
-            int srcW = w;
-            int srcH = h;
-            int scaleSize = 1;
+            if (online) {
+                builder.scheme("http")
+                .authority("wri-tiles.s3.amazonaws.com")
+                .appendPath("glad_prod")
+                .appendPath("tiles")
+                .appendPath(String.valueOf(zoomCord))
+                .appendPath(String.valueOf(xCord))
+                .appendPath(String.valueOf(yCord));
+                String providerUrl = builder.build().toString() + ".png";
+
+                URL url = null;
+                try {
+                    url = new URL(providerUrl);
+                    image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return NO_TILE;
+                }
+
+            } else {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                File dir = Environment.getExternalStorageDirectory();
+                File yourFile = new File(dir, "Download/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+
+                try {
+                    image = BitmapFactory.decodeFile(yourFile.getAbsolutePath(), options);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return NO_TILE;
+                }
+            }
 
             if (zoom > maxZoom) {
                 int zsteps = zoom - maxZoom;
@@ -76,13 +101,9 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 srcH = (int) size;
             }
 
-            //new DownloadTile(bitmapData)
-            //       .execute(providerUrl);
-
             URL url = null;
-            try {
-                url = new URL(providerUrl);
-                Bitmap image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+
+            if (image != null) {
                 Bitmap croppedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
                 Bitmap scaledBitmap = croppedBitmap;
                 if (zoom > maxZoom) {
@@ -128,16 +149,12 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 stream = new ByteArrayOutputStream();
                 finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
                 bitmapData = stream.toByteArray();
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+                return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
+            } else {
+                return NO_TILE;
             }
-
-            return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
         }
     }
-
 
     private TileOverlayOptions tileOverlayOptions;
     private TileOverlay tileOverlay;

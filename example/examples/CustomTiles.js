@@ -4,6 +4,8 @@ import {
   View,
   Text,
   Dimensions,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 
 import MapView, { MAP_TYPES, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -11,9 +13,9 @@ import MapView, { MAP_TYPES, PROVIDER_DEFAULT } from 'react-native-maps';
 const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
-const LATITUDE = -9.020726;
-const LONGITUDE = -52.467347;
-const LATITUDE_DELTA = 40.1922;
+const LATITUDE = -8.380882;
+const LONGITUDE = -74.448166;
+const LATITUDE_DELTA = 0.2222;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 class CustomTiles extends React.Component {
@@ -35,6 +37,14 @@ class CustomTiles extends React.Component {
     return this.props.provider === PROVIDER_DEFAULT ?
       MAP_TYPES.STANDARD : MAP_TYPES.NONE;
   }
+
+  componentDidMount() {
+    if (Platform.OS === 'android') {
+      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
+      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
+    }
+  }
+
 
   render() {
     const { region } = this.state;
