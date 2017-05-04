@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.lang.Math;
+
 
 public class AirMapCanvasUrlTile extends AirMapFeature {
 
@@ -30,6 +32,18 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         @Override
         public Tile getTile(int x, int y, int zoom) {
             int w = 256, h = 256;
+            int maxZoom = 12;
+            int xCord = x;
+            int yCord = y;
+            int zoomCord = zoom;
+            
+            if (zoom > maxZoom) {
+                xCord = (int)(x / (Math.pow(2, zoom - maxZoom)));
+                yCord = (int)(y / (Math.pow(2, zoom - maxZoom)));
+                zoomCord = maxZoom;
+            }
+
+
 
             Bitmap.Config conf = Bitmap.Config.ARGB_8888;
             Bitmap coordTile = Bitmap.createBitmap(w, h, conf);
@@ -41,13 +55,27 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     .authority("wri-tiles.s3.amazonaws.com")
                     .appendPath("glad_prod")
                     .appendPath("tiles")
-                    .appendPath(String.valueOf(zoom))
-                    .appendPath(String.valueOf(x))
-                    .appendPath(String.valueOf(y));
+                    .appendPath(String.valueOf(zoomCord))
+                    .appendPath(String.valueOf(xCord))
+                    .appendPath(String.valueOf(yCord));
             String providerUrl = builder.build().toString() + ".png";
 
             Log.d("Tiles", providerUrl);
 
+            int srcX = 0;
+            int srcY = 0;
+            int srcW = w;
+            int srcH = h;
+
+            if (zoom > maxZoom) {
+                int zsteps = zoom - maxZoom;
+                int relation = (int) Math.pow(2, zsteps) ;
+                int size = (int) (256 / relation);
+                srcX = (int) size  * (x % relation);
+                srcY = (int) size  * (y % relation);
+                srcW = (int) size;
+                srcH = (int) size;
+            }
 
             //new DownloadTile(bitmapData)
             //       .execute(providerUrl);
@@ -57,14 +85,16 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 url = new URL(providerUrl);
                 Bitmap image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
 
-                int width, height, r,g, b, c;
-                height = image.getHeight();
-                width = image.getWidth();
+                Bitmap resizedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
 
-                Bitmap intermediateBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                int width, height, r, g, b, c;
+                height = resizedBitmap.getHeight();
+                width = resizedBitmap.getWidth();
+
+                Bitmap finalBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
                 int red, green, blue, pixel, alpha;
                 int[] pixels = new int[width * height];
-                image.getPixels(pixels, 0, width, 0, 0, width, height);
+                resizedBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
                 for (int i = 0; i < pixels.length; i++) {
                     pixel = pixels[i];
 
@@ -90,10 +120,10 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                         
                     pixels[i] = Color.argb(alpha, red, green, blue);
                 }
-                intermediateBitmap.setPixels(pixels, 0, width, 0, 0, width, height);        
+                finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);        
                 
                 stream = new ByteArrayOutputStream();
-                intermediateBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
+                finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
                 bitmapData = stream.toByteArray();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
