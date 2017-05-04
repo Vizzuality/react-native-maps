@@ -31,6 +31,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         }
         @Override
         public Tile getTile(int x, int y, int zoom) {
+            int TILE_SIZE = 256;
             int w = 256, h = 256;
             int maxZoom = 12;
             int xCord = x;
@@ -61,11 +62,14 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             int srcY = 0;
             int srcW = w;
             int srcH = h;
+            int scaleSize = 1;
 
             if (zoom > maxZoom) {
                 int zsteps = zoom - maxZoom;
                 int relation = (int) Math.pow(2, zsteps) ;
-                int size = (int) (256 / relation);
+                int size = (int) (TILE_SIZE / relation);
+                // we scale the map to keep the tiles sharp
+                scaleSize = (int) (TILE_SIZE * 2);
                 srcX = (int) size  * (x % relation);
                 srcY = (int) size  * (y % relation);
                 srcW = (int) size;
@@ -79,17 +83,21 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             try {
                 url = new URL(providerUrl);
                 Bitmap image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-
-                Bitmap resizedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
+                Bitmap croppedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
+                Bitmap scaledBitmap = croppedBitmap;
+                if (zoom > maxZoom) {
+                    // The last false is for filter anti-aliasing
+                    scaledBitmap = Bitmap.createScaledBitmap (croppedBitmap, scaleSize, scaleSize, false);
+                }
 
                 int width, height, r, g, b, c;
-                height = resizedBitmap.getHeight();
-                width = resizedBitmap.getWidth();
+                height = scaledBitmap.getHeight();
+                width = scaledBitmap.getWidth();
 
                 Bitmap finalBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
                 int red, green, blue, pixel, alpha;
                 int[] pixels = new int[width * height];
-                resizedBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+                scaledBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
                 for (int i = 0; i < pixels.length; i++) {
                     pixel = pixels[i];
 
@@ -126,7 +134,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 e.printStackTrace();
             }
 
-            return new Tile(256, 256, bitmapData);
+            return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
         }
     }
 
