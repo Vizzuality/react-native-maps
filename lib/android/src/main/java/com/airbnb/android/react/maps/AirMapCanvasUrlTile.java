@@ -6,8 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.util.Log;
-import android.widget.ImageView;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Tile;
@@ -16,9 +16,8 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.lang.Math;
 
@@ -36,13 +35,14 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             int xCord = x;
             int yCord = y;
             int zoomCord = zoom;
-            
+
             if (zoom > maxZoom) {
                 xCord = (int)(x / (Math.pow(2, zoom - maxZoom)));
                 yCord = (int)(y / (Math.pow(2, zoom - maxZoom)));
                 zoomCord = maxZoom;
             }
 
+            boolean online = false;
 
 
             Bitmap.Config conf = Bitmap.Config.ARGB_8888;
@@ -51,16 +51,42 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             //coordTile.compress(Bitmap.CompressFormat.PNG, 100, stream);
             byte[] bitmapData = stream.toByteArray();
             Uri.Builder builder = new Uri.Builder();
-            builder.scheme("http")
-                    .authority("wri-tiles.s3.amazonaws.com")
-                    .appendPath("glad_prod")
-                    .appendPath("tiles")
-                    .appendPath(String.valueOf(zoomCord))
-                    .appendPath(String.valueOf(xCord))
-                    .appendPath(String.valueOf(yCord));
-            String providerUrl = builder.build().toString() + ".png";
+            Bitmap image;
 
-            Log.d("Tiles", providerUrl);
+            if (online) {
+
+                builder.scheme("http")
+                .authority("wri-tiles.s3.amazonaws.com")
+                .appendPath("glad_prod")
+                .appendPath("tiles")
+                .appendPath(String.valueOf(zoomCord))
+                .appendPath(String.valueOf(xCord))
+                .appendPath(String.valueOf(yCord));
+                String providerUrl = builder.build().toString() + ".png";
+
+                URL url = null;
+                try {
+                    url = new URL(providerUrl);
+                    image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return NO_TILE;
+                }
+
+            } else {
+
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                File dir = Environment.getExternalStorageDirectory();
+                File yourFile = new File(dir, "Download/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+
+                try {
+                    image = BitmapFactory.decodeFile(yourFile.getAbsolutePath(), options);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return NO_TILE;
+                }
+            }
 
             int srcX = 0;
             int srcY = 0;
@@ -80,61 +106,59 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             //new DownloadTile(bitmapData)
             //       .execute(providerUrl);
 
-            URL url = null;
-            try {
-                url = new URL(providerUrl);
-                Bitmap image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+            if (image != null) {
+              try {
 
-                Bitmap resizedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
+                  Bitmap resizedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
 
-                int width, height, r, g, b, c;
-                height = resizedBitmap.getHeight();
-                width = resizedBitmap.getWidth();
+                  int width, height, r, g, b, c;
+                  height = resizedBitmap.getHeight();
+                  width = resizedBitmap.getWidth();
 
-                Bitmap finalBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-                int red, green, blue, pixel, alpha;
-                int[] pixels = new int[width * height];
-                resizedBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-                for (int i = 0; i < pixels.length; i++) {
-                    pixel = pixels[i];
+                  Bitmap finalBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                  int red, green, blue, pixel, alpha;
+                  int[] pixels = new int[width * height];
+                  resizedBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+                  for (int i = 0; i < pixels.length; i++) {
+                      pixel = pixels[i];
 
-                    red = (pixel >> 16) & 0xFF;
-                    green = (pixel >> 8) & 0xFF;
-                    blue = pixel & 0xFF;
+                      red = (pixel >> 16) & 0xFF;
+                      green = (pixel >> 8) & 0xFF;
+                      blue = pixel & 0xFF;
 
-                    int day = red * 255 + green;
+                      int day = red * 255 + green;
 
-                    if (red > 255)
-                        red = 255;
-                    if (green > 255)
-                        green = 255;
+                      if (red > 255)
+                          red = 255;
+                      if (green > 255)
+                          green = 255;
 
-                    if (day > 0) {
-                        red = 220;
-                        green = 102;
-                        blue = 153;
-                        alpha = 255;
-                    } else {
-                        alpha = 0;
-                    }
-                        
-                    pixels[i] = Color.argb(alpha, red, green, blue);
-                }
-                finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);        
-                
-                stream = new ByteArrayOutputStream();
-                finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
-                bitmapData = stream.toByteArray();
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+                      if (day > 0) {
+                          red = 220;
+                          green = 102;
+                          blue = 153;
+                          alpha = 255;
+                      } else {
+                          alpha = 0;
+                      }
+
+                      pixels[i] = Color.argb(alpha, red, green, blue);
+                  }
+                  finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+
+                  stream = new ByteArrayOutputStream();
+                  finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
+
+                  bitmapData = stream.toByteArray();
+              } catch (Exception e) {
+                  e.printStackTrace();
+              }
+              return new Tile(256, 256, bitmapData);
+            } else {
+                return NO_TILE;
             }
-
-            return new Tile(256, 256, bitmapData);
         }
     }
-
 
     private TileOverlayOptions tileOverlayOptions;
     private TileOverlay tileOverlay;
