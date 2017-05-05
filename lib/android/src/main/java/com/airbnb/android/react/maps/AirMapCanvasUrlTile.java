@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -39,35 +40,83 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             this.isConnected = isConnected;
         }
         @Override
-        public Tile getTile(int x, int y, int zoom) {
+        public Tile getTile(int x, int y, int zoom) {            
             int TILE_SIZE = this.width;
+            try{
+                byte[] bitmapData = new BackgroundTask().execute(String.valueOf(this.isConnected), Integer.toString(x), Integer.toString(y), 
+                                                                 Integer.toString(zoom), Integer.toString(width), Integer.toString(height),
+                                                                 this.areaName, this.urlTemplate).get();
+                if (bitmapData == null){
+                    return null;
+                } else {
+                    return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        public void setUrlTemplate(String urlTemplate) {
+            this.urlTemplate = urlTemplate;
+        }
+
+        public void setMaxZoom(int maxZoom) {
+            this.maxZoom = maxZoom;
+        }
+
+        public void setAreaName(String areaName) {
+            this.areaName = areaName;
+        }
+
+        public void setIsConnected(boolean isConnected) {
+            this.isConnected = isConnected;
+        }
+    }
+    private class BackgroundTask extends AsyncTask<String, Integer, byte[]> {
+        @Override
+        protected byte[] doInBackground(String... response) {
+            Boolean isConnected =  Boolean.parseBoolean(response[0]);
+            int x = Integer.valueOf(response[1]);
+            int y = Integer.valueOf(response[2]);
+            int zoom = Integer.valueOf(response[3]);
+            int width = Integer.valueOf(response[4]);
+            int height = Integer.valueOf(response[5]);
+            String areaName = response[6];
+            String urlTemplate = response[7];
+            
+            int TILE_SIZE = width;
             int maxZoom = 12;
             int xCord = x;
             int yCord = y;
             int zoomCord = zoom;
             int srcX = 0;
             int srcY = 0;
-            int srcW = this.width;
-            int srcH = this.height;
+            int srcW = width;
+            int srcH = height;
             int scaleSize = 1;
+                Log.e("x", String.valueOf(x));
+                Log.e("y", String.valueOf(y));
 
-            if (zoom > this.maxZoom) {
-                xCord = (int)(x / (Math.pow(2, zoom - this.maxZoom)));
-                yCord = (int)(y / (Math.pow(2, zoom - this.maxZoom)));
-                zoomCord = this.maxZoom;
+            if (zoom > maxZoom) {
+                xCord = (int)(x / (Math.pow(2, zoom - maxZoom)));
+                yCord = (int)(y / (Math.pow(2, zoom - maxZoom)));
+                zoomCord = maxZoom;
             }
 
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             byte[] bitmapData = stream.toByteArray();
             Uri.Builder builder = new Uri.Builder();
+            Bitmap image = null;
+            byte[] finalBitmapData = null;
 
-            Bitmap image;
 
-            if (this.isConnected) {
-                String providerUrl = this.urlTemplate
-                  .replace("{x}", Integer.toString(xCord))
-                  .replace("{y}", Integer.toString(yCord))
-                  .replace("{z}", Integer.toString(zoomCord));
+
+            if (isConnected) {
+                String providerUrl = urlTemplate
+                  .replace("{x}", String.valueOf(xCord))
+                  .replace("{y}", String.valueOf(yCord))
+                  .replace("{z}", String.valueOf(zoomCord));
 
                 URL url;
                 try {
@@ -75,7 +124,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return NO_TILE;
+                    return null;
                 }
 
             } else {
@@ -88,12 +137,13 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return NO_TILE;
+                    return null;
                 }
             }
 
-            if (zoom > this.maxZoom) {
-                int zsteps = zoom - this.maxZoom;
+
+            if (zoom > maxZoom) {
+                int zsteps = zoom - maxZoom;
                 int relation = (int) Math.pow(2, zsteps) ;
                 int size = (int) (TILE_SIZE / relation);
                 // we scale the map to keep the tiles sharp
@@ -112,14 +162,14 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     scaledBitmap = Bitmap.createScaledBitmap (croppedBitmap, scaleSize, scaleSize, false);
                 }
 
-                int width, height, r, g, b, c;
-                height = scaledBitmap.getHeight();
-                width = scaledBitmap.getWidth();
+                int w, h, r, g, b, c;
+                h = scaledBitmap.getHeight();
+                w = scaledBitmap.getWidth();
 
-                Bitmap finalBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                Bitmap finalBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                 int red, green, blue, pixel, alpha;
-                int[] pixels = new int[width * height];
-                scaledBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+                int[] pixels = new int[w * h];
+                scaledBitmap.getPixels(pixels, 0, w, 0, 0, w, h);
                 for (int i = 0; i < pixels.length; i++) {
                     pixel = pixels[i];
 
@@ -145,34 +195,18 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
 
                     pixels[i] = Color.argb(alpha, red, green, blue);
                 }
-                finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+                finalBitmap.setPixels(pixels, 0, w, 0, 0, w, h);
 
                 stream = new ByteArrayOutputStream();
                 finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
                 bitmapData = stream.toByteArray();
-                return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
+                finalBitmapData = bitmapData;
             } else {
-                return NO_TILE;
+                finalBitmapData = null;
             }
-        }
-
-        public void setUrlTemplate(String urlTemplate) {
-            this.urlTemplate = urlTemplate;
-        }
-
-        public void setMaxZoom(int maxZoom) {
-            this.maxZoom = maxZoom;
-        }
-
-        public void setAreaName(String areaName) {
-            this.areaName = areaName;
-        }
-
-        public void setIsConnected(boolean isConnected) {
-            this.isConnected = isConnected;
+            return finalBitmapData;
         }
     }
-
     private TileOverlayOptions tileOverlayOptions;
     private TileOverlay tileOverlay;
     private AIRMapCanvasUrlTileProvider tileProvider;
