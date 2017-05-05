@@ -54,11 +54,17 @@ class CustomTiles extends React.Component {
           provider={this.props.provider}
           mapType={this.mapType}
           style={styles.map}
+          mapType="hybrid"
           initialRegion={region}
         >
           <MapView.CanvasUrlTile
             urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
             zIndex={-1}
+            maxZoom={12}
+            areaName="Download"
+            isConnected={false}
+            minDate="2017/01/01"
+            maxDate="2017/03/01"
           />
         </MapView>
         <View style={styles.buttonContainer}>

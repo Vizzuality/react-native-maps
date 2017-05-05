@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
 
@@ -17,7 +16,6 @@ import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
 import java.net.URL;
 import java.lang.Math;
 
@@ -25,48 +23,53 @@ import java.lang.Math;
 public class AirMapCanvasUrlTile extends AirMapFeature {
 
     class AIRMapCanvasUrlTileProvider implements TileProvider {
-        public AIRMapCanvasUrlTileProvider(int width, int height) {
+        private String urlTemplate;
+        private int width;
+        private int height;
+        private int maxZoom;
+        private String areaName;
+        private boolean isConnected;
+        public AIRMapCanvasUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaName, boolean isConnected) {
             super();
+            this.width = width;
+            this.height = height;
+            this.urlTemplate = urlTemplate;
+            this.maxZoom = maxZoom;
+            this.areaName = areaName;
+            this.isConnected = isConnected;
         }
         @Override
         public Tile getTile(int x, int y, int zoom) {
-            int TILE_SIZE = 256;
-            int w = 256, h = 256;
+            int TILE_SIZE = this.width;
             int maxZoom = 12;
             int xCord = x;
             int yCord = y;
             int zoomCord = zoom;
             int srcX = 0;
             int srcY = 0;
-            int srcW = w;
-            int srcH = h;
+            int srcW = this.width;
+            int srcH = this.height;
             int scaleSize = 1;
-            boolean online = true;
 
-            if (zoom > maxZoom) {
-                xCord = (int)(x / (Math.pow(2, zoom - maxZoom)));
-                yCord = (int)(y / (Math.pow(2, zoom - maxZoom)));
-                zoomCord = maxZoom;
+            if (zoom > this.maxZoom) {
+                xCord = (int)(x / (Math.pow(2, zoom - this.maxZoom)));
+                yCord = (int)(y / (Math.pow(2, zoom - this.maxZoom)));
+                zoomCord = this.maxZoom;
             }
 
-            Bitmap.Config conf = Bitmap.Config.ARGB_8888;
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             byte[] bitmapData = stream.toByteArray();
             Uri.Builder builder = new Uri.Builder();
 
             Bitmap image;
 
-            if (online) {
-                builder.scheme("http")
-                .authority("wri-tiles.s3.amazonaws.com")
-                .appendPath("glad_prod")
-                .appendPath("tiles")
-                .appendPath(String.valueOf(zoomCord))
-                .appendPath(String.valueOf(xCord))
-                .appendPath(String.valueOf(yCord));
-                String providerUrl = builder.build().toString() + ".png";
+            if (this.isConnected) {
+                String providerUrl = this.urlTemplate
+                  .replace("{x}", Integer.toString(xCord))
+                  .replace("{y}", Integer.toString(yCord))
+                  .replace("{z}", Integer.toString(zoomCord));
 
-                URL url = null;
+                URL url;
                 try {
                     url = new URL(providerUrl);
                     image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
@@ -79,18 +82,18 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inPreferredConfig = Bitmap.Config.ARGB_8888;
                 File dir = Environment.getExternalStorageDirectory();
-                File yourFile = new File(dir, "Download/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+                File myFile = new File(dir, areaName + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
 
                 try {
-                    image = BitmapFactory.decodeFile(yourFile.getAbsolutePath(), options);
+                    image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return NO_TILE;
                 }
             }
 
-            if (zoom > maxZoom) {
-                int zsteps = zoom - maxZoom;
+            if (zoom > this.maxZoom) {
+                int zsteps = zoom - this.maxZoom;
                 int relation = (int) Math.pow(2, zsteps) ;
                 int size = (int) (TILE_SIZE / relation);
                 // we scale the map to keep the tiles sharp
@@ -100,8 +103,6 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 srcW = (int) size;
                 srcH = (int) size;
             }
-
-            URL url = null;
 
             if (image != null) {
                 Bitmap croppedBitmap = Bitmap.createBitmap(image , srcX , srcY, srcW, srcH);
@@ -141,11 +142,11 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     } else {
                         alpha = 0;
                     }
-                        
+
                     pixels[i] = Color.argb(alpha, red, green, blue);
                 }
-                finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);        
-                
+                finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+
                 stream = new ByteArrayOutputStream();
                 finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
                 bitmapData = stream.toByteArray();
@@ -154,16 +155,86 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 return NO_TILE;
             }
         }
+
+        public void setUrlTemplate(String urlTemplate) {
+            this.urlTemplate = urlTemplate;
+        }
+
+        public void setMaxZoom(int maxZoom) {
+            this.maxZoom = maxZoom;
+        }
+
+        public void setAreaName(String areaName) {
+            this.areaName = areaName;
+        }
+
+        public void setIsConnected(boolean isConnected) {
+            this.isConnected = isConnected;
+        }
     }
 
     private TileOverlayOptions tileOverlayOptions;
     private TileOverlay tileOverlay;
+    private AIRMapCanvasUrlTileProvider tileProvider;
 
     private String urlTemplate;
+    private int maxZoom;
+    private String areaName;
+    private String minDate;
+    private String maxDate;
+    private boolean isConnected;
     private float zIndex;
 
     public AirMapCanvasUrlTile(Context context) {
         super(context);
+    }
+
+    public void setUrlTemplate(String urlTemplate) {
+        this.urlTemplate = urlTemplate;
+        if (tileProvider != null) {
+            tileProvider.setUrlTemplate(urlTemplate);
+        }
+        if (tileOverlay != null) {
+            tileOverlay.clearTileCache();
+        }
+    }
+
+    public void setMaxZoom(int maxZoom) {
+        this.maxZoom = maxZoom;
+        if (tileProvider != null) {
+            tileProvider.setMaxZoom(maxZoom);
+        }
+        if (tileOverlay != null) {
+            tileOverlay.clearTileCache();
+        }
+    }
+
+    public void setAreaName(String areaName) {
+        this.areaName = areaName;
+        if (tileProvider != null) {
+            tileProvider.setAreaName(areaName);
+        }
+        if (tileOverlay != null) {
+            tileOverlay.clearTileCache();
+        }
+    }
+
+    public void setIsConnected(boolean isConnected) {
+        this.isConnected = isConnected;
+        if (tileProvider != null) {
+            tileProvider.setIsConnected(isConnected);
+        }
+        if (tileOverlay != null) {
+            tileOverlay.clearTileCache();
+        }
+    }
+
+    public void setMinDate(String minDate) {
+        this.minDate = minDate;
+    }
+
+    public void setMaxDate(String maxDate) {
+        this.minDate = maxDate;
     }
 
     public void setZIndex(float zIndex) {
@@ -173,34 +244,19 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         }
     }
 
-    private class DownloadTile extends AsyncTask<String, Void, Bitmap> {
-        private byte[] tile;
-
-        public DownloadTile(byte[] tile) {
-            this.tile = tile;
+    public TileOverlayOptions getTileOverlayOptions() {
+        if (tileOverlayOptions == null) {
+            tileOverlayOptions = createTileOverlayOptions();
         }
+        return tileOverlayOptions;
+    }
 
-        protected Bitmap doInBackground(String... urls) {
-            String imageURL = urls[0];
-            Bitmap bimage = null;
-            try {
-                InputStream in = new java.net.URL(imageURL).openStream();
-                bimage = BitmapFactory.decodeStream(in);
-
-            } catch (Exception e) {
-                Log.e("Error Message", e.getMessage());
-                e.printStackTrace();
-            }
-            return bimage;
-        }
-
-        protected void onPostExecute(Bitmap result) {
-            Log.d("Title", String.valueOf(result));
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            result.compress(Bitmap.CompressFormat.PNG, 0, stream);
-            this.tile = stream.toByteArray();
-            Tile newTile = new Tile(256, 256, this.tile);
-        }
+    private TileOverlayOptions createTileOverlayOptions() {
+        TileOverlayOptions options = new TileOverlayOptions();
+        options.zIndex(zIndex);
+        this.tileProvider = new AIRMapCanvasUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaName, this.isConnected);
+        options.tileProvider(this.tileProvider);
+        return options;
     }
 
     @Override
@@ -210,8 +266,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
 
     @Override
     public void addToMap(GoogleMap map) {
-        Log.d("Map", "Add to map");
-        this.tileOverlay = map.addTileOverlay(new TileOverlayOptions().tileProvider(new AIRMapCanvasUrlTileProvider(256, 256)));
+        this.tileOverlay = map.addTileOverlay(getTileOverlayOptions());
     }
 
     @Override

@@ -39,7 +39,32 @@ public class AirMapCanvasUrlTileManager extends ViewGroupManager<AirMapCanvasUrl
 
     @ReactProp(name = "urlTemplate")
     public void setUrlTemplate(AirMapCanvasUrlTile view, String urlTemplate) {
-        /*view.setUrlTemplate(urlTemplate);*/
+        view.setUrlTemplate(urlTemplate);
+    }
+
+    @ReactProp(name = "maxZoom", defaultInt = 12)
+    public void setMaxZoom(AirMapCanvasUrlTile view, int maxZoom) {
+        view.setMaxZoom(maxZoom);
+    }
+
+    @ReactProp(name = "areaName")
+    public void setAreaName(AirMapCanvasUrlTile view, String areaName) {
+        view.setAreaName(areaName);
+    }
+
+    @ReactProp(name = "isConnected", defaultBoolean = true)
+    public void setIsConnected(AirMapCanvasUrlTile view, boolean isConnected) {
+        view.setIsConnected(isConnected);
+    }
+
+    @ReactProp(name = "minDate")
+    public void setMinDate(AirMapCanvasUrlTile view, String minDate) {
+        view.setMinDate(minDate);
+    }
+
+    @ReactProp(name = "maxDate")
+    public void setMaxDate(AirMapCanvasUrlTile view, String maxDate) {
+        view.setMaxDate(maxDate);
     }
 
     @ReactProp(name = "zIndex", defaultFloat = -1.0f)
