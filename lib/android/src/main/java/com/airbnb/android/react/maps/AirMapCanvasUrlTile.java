@@ -28,8 +28,10 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         private int height;
         private int maxZoom;
         private String areaId;
+        private String minDate;
+        private String maxDate;
         private boolean isConnected;
-        public AIRMapCanvasUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaId, boolean isConnected) {
+        public AIRMapCanvasUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaId, boolean isConnected, String minDate, String maxDate) {
             super();
             this.width = width;
             this.height = height;
@@ -37,6 +39,8 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             this.maxZoom = maxZoom;
             this.areaId = areaId;
             this.isConnected = isConnected;
+            this.minDate = minDate;
+            this.maxDate = maxDate;
         }
         @Override
         public Tile getTile(int x, int y, int zoom) {
@@ -50,7 +54,8 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
             int srcW = this.width;
             int srcH = this.height;
             int scaleSize = 1;
-
+            int minDate = Integer.valueOf(this.minDate);
+            int maxDate = Integer.valueOf(this.maxDate);
             // Log.d("Position", String.valueOf(x) + "x" + String.valueOf(y) +  "x" + String.valueOf(zoom));
 
             if (zoom > this.maxZoom) {
@@ -129,14 +134,14 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     green = (pixel >> 8) & 0xFF;
                     blue = pixel & 0xFF;
 
-                    int day = red * 255 + green;
-
                     if (red > 255)
                         red = 255;
                     if (green > 255)
                         green = 255;
 
-                    if (day > 0) {
+                    int day = red * 255 + green;
+
+                    if (day > 0 && day >= minDate && day <= maxDate) {
                         red = 220;
                         green = 102;
                         blue = 153;
@@ -236,7 +241,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
     }
 
     public void setMaxDate(String maxDate) {
-        this.minDate = maxDate;
+        this.maxDate = maxDate;
     }
 
     public void setZIndex(float zIndex) {
@@ -256,7 +261,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
     private TileOverlayOptions createTileOverlayOptions() {
         TileOverlayOptions options = new TileOverlayOptions();
         options.zIndex(zIndex);
-        this.tileProvider = new AIRMapCanvasUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.isConnected);
+        this.tileProvider = new AIRMapCanvasUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.isConnected, this.minDate, this.maxDate);
         options.tileProvider(this.tileProvider);
         return options;
     }
