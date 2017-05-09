@@ -84,7 +84,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inPreferredConfig = Bitmap.Config.ARGB_8888;
                 File dir = getContext().getFilesDir();
-                File myFile = new File(dir, "tiles/" + areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+                File myFile = new File(dir + "/tiles", areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
 
                 try {
                     image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
