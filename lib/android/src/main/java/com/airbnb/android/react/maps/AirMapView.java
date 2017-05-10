@@ -460,6 +460,10 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
             AirMapCanvasUrlTile canvasUrlTileView = (AirMapCanvasUrlTile) child;
             canvasUrlTileView.addToMap(map);
             features.add(index, canvasUrlTileView);
+        } else if (child instanceof AirMapCanvasInteractionUrlTile) {
+            AirMapCanvasInteractionUrlTile canvasInteractionUrlTileView = (AirMapCanvasInteractionUrlTile) child;
+            canvasInteractionUrlTileView.addToMap(map);
+            features.add(index, canvasInteractionUrlTileView);
         } else {
             ViewGroup children = (ViewGroup) child;
             for (int i = 0; i < children.getChildCount(); i++) {

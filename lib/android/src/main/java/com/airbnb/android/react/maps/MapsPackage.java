@@ -40,6 +40,7 @@ public class MapsPackage implements ReactPackage {
         AirMapLiteManager mapLiteManager = new AirMapLiteManager(reactContext);
         AirMapUrlTileManager tileManager = new AirMapUrlTileManager(reactContext);
         AirMapCanvasUrlTileManager canvasTileManager = new AirMapCanvasUrlTileManager(reactContext);
+        AirMapCanvasInteractionUrlTileManager canvasInteractionTileManager = new AirMapCanvasInteractionUrlTileManager(reactContext);
 
         return Arrays.<ViewManager>asList(
                 calloutManager,
@@ -50,6 +51,7 @@ public class MapsPackage implements ReactPackage {
                 mapManager,
                 mapLiteManager,
                 tileManager,
-                canvasTileManager);
+                canvasTileManager,
+                canvasInteractionTileManager);
     }
 }

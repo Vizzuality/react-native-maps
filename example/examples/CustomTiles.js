@@ -10,6 +10,9 @@ import {
 
 import MapView, { MAP_TYPES, PROVIDER_DEFAULT } from 'react-native-maps';
 
+const geoViewport = require('@mapbox/geo-viewport');
+const tilebelt = require('@mapbox/tilebelt');
+
 const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
@@ -23,6 +26,11 @@ class CustomTiles extends React.Component {
     super(props, context);
 
     this.state = {
+      coordinates: {
+        latitude: null,
+        longitude: null,
+        tile: [], // tile coordinates x, y, z
+      },
       region: {
         latitude: LATITUDE,
         longitude: LONGITUDE,
@@ -45,9 +53,39 @@ class CustomTiles extends React.Component {
     }
   }
 
+  getMapZoom() {
+    const position = this.state.region;
+
+    const bounds = [
+      position.longitude - (position.longitudeDelta / 2),
+      position.latitude - (position.latitudeDelta / 2),
+      position.longitude + (position.longitudeDelta / 2),
+      position.latitude + (position.latitudeDelta / 2),
+    ];
+
+    return geoViewport.viewport(bounds, [height, width]).zoom || null;
+  }
+
+  onRegionChange = (region) => {
+    this.setState({ region });
+  }
+
+  onMapPress = (e) => {
+    const coordinates = e.nativeEvent.coordinate;
+    const zoom = this.getMapZoom();
+    const tile = tilebelt.pointToTile(coordinates.longitude, coordinates.latitude, zoom);
+    this.setState({
+      coordinates: {
+        ...coordinates,
+        tile,
+      },
+    });
+  }
 
   render() {
-    const { region } = this.state;
+    const { region, coordinates } = this.state;
+    const hasCoordinates = (coordinates.latitude && coordinates.longitude && coordinates.tile !== null) || false;
+
     return (
       <View style={styles.container}>
         <MapView
@@ -55,17 +93,31 @@ class CustomTiles extends React.Component {
           mapType={this.mapType}
           style={styles.map}
           mapType="hybrid"
+          onPress={this.onMapPress}
           initialRegion={region}
+          onRegionChangeComplete={this.onRegionChange}
         >
           <MapView.CanvasUrlTile
             urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
             zIndex={-1}
             maxZoom={12}
             areaName="Download"
-            isConnected={false}
+            isConnected
             minDate="2017/01/01"
             maxDate="2017/03/01"
           />
+          {hasCoordinates &&
+            <MapView.CanvasInteractionUrlTile
+              coordinates={coordinates}
+              urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
+              zIndex={-1}
+              maxZoom={12}
+              areaName="Download"
+              isConnected
+              minDate="2017/01/01"
+              maxDate="2017/03/01"
+            />
+          }
         </MapView>
         <View style={styles.buttonContainer}>
           <View style={styles.bubble}>
