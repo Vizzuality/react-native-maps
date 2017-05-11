@@ -62,11 +62,20 @@ class CustomTiles extends React.Component {
       position.latitude + (position.latitudeDelta / 2),
     ];
 
-    return geoViewport.viewport(bounds, [height, width]).zoom || null;
+    return geoViewport.viewport(bounds, [width, height], 0, 21, 256).zoom || 0;
+  }
+
+  onRegionChangeComplete = (region) => {
+    this.updateRegion(region);
   }
 
   onRegionChange = (region) => {
-    this.setState({ region });
+    if (this.onRegionChangeTimer) {
+      clearTimeout(this.onRegionChangeTimer);
+    }
+    this.onRegionChangeTimer = setTimeout(() => {
+      this.updateRegion(region);
+    }, 200);
   }
 
   onMapPress = (e) => {
@@ -82,9 +91,13 @@ class CustomTiles extends React.Component {
     });
   }
 
+  updateRegion = (region) => {
+    this.setState({ region });
+  }
+
   render() {
     const { region, coordinates } = this.state;
-    const hasCoordinates = (coordinates.tile && coordinates.tile.length > 0) || false;
+    const hasCoordinates = (coordinates.tile && coordinates.tile.length === 3) || false;
     console.log(coordinates);
     return (
       <View style={styles.container}>
@@ -95,7 +108,8 @@ class CustomTiles extends React.Component {
           mapType="hybrid"
           onPress={this.onMapPress}
           initialRegion={region}
-          onRegionChangeComplete={this.onRegionChange}
+          onRegionChange={this.onRegionChange}
+          onRegionChangeComplete={this.onRegionChangeComplete}
         >
           <MapView.CanvasUrlTile
             urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"

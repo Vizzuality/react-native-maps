@@ -58,6 +58,6 @@
   },
   "dependencies": {
     "@mapbox/geo-viewport": "^0.2.2",
-    "@mapbox/tilebelt": "^1.0.1"
+    "@mapbox/tilebelt": "Vizzuality/tilebelt"
   }
 }
