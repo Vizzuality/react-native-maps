@@ -44,15 +44,19 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
         private int height;
         private int maxZoom;
         private String areaId;
+        private String minDate;
+        private String maxDate;
         private boolean isConnected;
         private Coordinates coordinates;
-        public AIRMapCanvasInteractionUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaId, boolean isConnected, Coordinates coordinates) {
+        public AIRMapCanvasInteractionUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaId, boolean isConnected, String minDate, String maxDate, Coordinates coordinates) {
             super();
             this.width = width;
             this.height = height;
             this.urlTemplate = urlTemplate;
             this.maxZoom = maxZoom;
             this.areaId = areaId;
+            this.minDate = minDate;
+            this.maxDate = maxDate;
             this.isConnected = isConnected;
             this.coordinates = coordinates;
         }
@@ -68,6 +72,10 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
             int srcW = this.width;
             int srcH = this.height;
             int scaleSize = 1;
+
+            int minDate = Integer.valueOf(this.minDate);
+            int maxDate = Integer.valueOf(this.maxDate);
+
             int[] tile = coordinates.getTile();
             Log.d("tile Position: ", x + "-" + y + "-" + zoom);
             Log.d("tile given: ", tile[0] + "-" + tile[1] + "-" + tile[2]);
@@ -161,9 +169,10 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
                             green = 255;
 
                         int day = red * 255 + green;
+                        boolean inDay = day > 0 && day >= minDate && day <= maxDate;
+                        boolean inPoint = xPoint == xFilter && yPoint == yFilter;
 
-                        // if (day > 0 && day >= minDate && day <= maxDate) {
-                        if (xPoint == xFilter && yPoint == yFilter) {
+                        if (inDay && inPoint) {
                             red = 255;
                             green = 255;
                             blue = 255;
@@ -271,7 +280,7 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
     }
 
     public void setMaxDate(String maxDate) {
-        this.minDate = maxDate;
+        this.maxDate = maxDate;
     }
 
     public void setZIndex(float zIndex) {
@@ -301,7 +310,7 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
     private TileOverlayOptions createTileOverlayOptions() {
         TileOverlayOptions options = new TileOverlayOptions();
         options.zIndex(zIndex);
-        this.tileProvider = new AIRMapCanvasInteractionUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.isConnected, this.coordinates);
+        this.tileProvider = new AIRMapCanvasInteractionUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.isConnected, this.minDate, this.maxDate, this.coordinates);
         options.tileProvider(this.tileProvider);
         // options.fadeIn(false);
         return options;
