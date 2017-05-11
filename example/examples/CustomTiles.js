@@ -27,9 +27,8 @@ class CustomTiles extends React.Component {
 
     this.state = {
       coordinates: {
-        latitude: null,
-        longitude: null,
-        tile: [], // tile coordinates x, y, z
+        tile: [], // tile coordinates x, y, z + precision x, y
+        precision: [], // tile precision x, y
       },
       region: {
         latitude: LATITUDE,
@@ -73,19 +72,20 @@ class CustomTiles extends React.Component {
   onMapPress = (e) => {
     const coordinates = e.nativeEvent.coordinate;
     const zoom = this.getMapZoom();
-    const tile = tilebelt.pointToTile(coordinates.longitude, coordinates.latitude, zoom);
+    const tile = tilebelt.pointToTile(coordinates.longitude, coordinates.latitude, zoom, true);
+
     this.setState({
       coordinates: {
-        ...coordinates,
-        tile,
+        tile: [tile[0], tile[1], tile[2]],
+        precision: [tile[3], tile[4]],
       },
     });
   }
 
   render() {
     const { region, coordinates } = this.state;
-    const hasCoordinates = (coordinates.latitude && coordinates.longitude && coordinates.tile !== null) || false;
-
+    const hasCoordinates = (coordinates.tile && coordinates.tile.length > 0) || false;
+    console.log(coordinates);
     return (
       <View style={styles.container}>
         <MapView
@@ -101,7 +101,7 @@ class CustomTiles extends React.Component {
             urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
             zIndex={-1}
             maxZoom={12}
-            areaName="Download"
+            areaId="Download"
             isConnected
             minDate="2017/01/01"
             maxDate="2017/03/01"
@@ -112,7 +112,7 @@ class CustomTiles extends React.Component {
               urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
               zIndex={-1}
               maxZoom={12}
-              areaName="Download"
+              areaId="Download"
               isConnected
               minDate="2017/01/01"
               maxDate="2017/03/01"

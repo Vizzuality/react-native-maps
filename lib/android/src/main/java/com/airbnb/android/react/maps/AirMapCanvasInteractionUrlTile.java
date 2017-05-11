@@ -21,26 +21,19 @@ import java.lang.Math;
 
 public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
     private class Coordinates {
-        private double lat;
-        private double lng;
         private int[] tile;
+        private double[] precision;
 
-        public Coordinates(double lat, double lng, int[] tile) {
-            this.lat = lat;
-            this.lng = lng;
+        public Coordinates(int[] tile, double[] precision) {
             this.tile = tile;
-        }
-
-        public double getLat() {
-            return lat;
-        }
-
-        public double getLng() {
-            return lng;
+            this.precision = precision;
         }
 
         public int[] getTile() {
             return tile;
+        }
+        public double[] getPrecision() {
+            return precision;
         }
     }
 
@@ -75,7 +68,6 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
             int srcW = this.width;
             int srcH = this.height;
             int scaleSize = 1;
-
             int[] tile = coordinates.getTile();
             Log.d("tile Position: ", x + "-" + y + "-" + zoom);
             Log.d("tile given: ", tile[0] + "-" + tile[1] + "-" + tile[2]);
@@ -83,9 +75,9 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
             if (tile[0] == x && tile[1] == y && tile[2] == zoom) {
 
                 if (zoom > this.maxZoom) {
-                    xCord = (int)(x / (Math.pow(2, zoom - this.maxZoom)));
-                    yCord = (int)(y / (Math.pow(2, zoom - this.maxZoom)));
-                    zoomCord = this.maxZoom;
+                  xCord = (int)(x / (Math.pow(2, zoom - this.maxZoom)));
+                  yCord = (int)(y / (Math.pow(2, zoom - this.maxZoom)));
+                  zoomCord = this.maxZoom;
                 }
 
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -94,44 +86,44 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
                 Bitmap image;
 
                 if (this.isConnected) {
-                    String providerUrl = this.urlTemplate
-                      .replace("{x}", Integer.toString(xCord))
-                      .replace("{y}", Integer.toString(yCord))
-                      .replace("{z}", Integer.toString(zoomCord));
+                  String providerUrl = this.urlTemplate
+                    .replace("{x}", Integer.toString(xCord))
+                    .replace("{y}", Integer.toString(yCord))
+                    .replace("{z}", Integer.toString(zoomCord));
 
-                    URL url;
-                    try {
-                        url = new URL(providerUrl);
-                        image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return NO_TILE;
-                    }
+                  URL url;
+                  try {
+                      url = new URL(providerUrl);
+                      image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                      return NO_TILE;
+                  }
 
                 } else {
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-                    File dir = getContext().getFilesDir();
-                    File myFile = new File(dir + "/tiles", areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+                  BitmapFactory.Options options = new BitmapFactory.Options();
+                  options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                  File dir = getContext().getFilesDir();
+                  File myFile = new File(dir + "/tiles", areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
 
-                    try {
-                        image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return NO_TILE;
-                    }
+                  try {
+                      image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                      return NO_TILE;
+                  }
                 }
 
                 if (zoom > this.maxZoom) {
-                    int zsteps = zoom - this.maxZoom;
-                    int relation = (int) Math.pow(2, zsteps) ;
-                    int size = (int) (TILE_SIZE / relation);
-                    // we scale the map to keep the tiles sharp
-                    scaleSize = (int) (TILE_SIZE * 2);
-                    srcX = (int) size  * (x % relation);
-                    srcY = (int) size  * (y % relation);
-                    srcW = (int) size;
-                    srcH = (int) size;
+                  int zsteps = zoom - this.maxZoom;
+                  int relation = (int) Math.pow(2, zsteps) ;
+                  int size = (int) (TILE_SIZE / relation);
+                  // we scale the map to keep the tiles sharp
+                  scaleSize = (int) (TILE_SIZE * 2);
+                  srcX = (int) size  * (x % relation);
+                  srcY = (int) size  * (y % relation);
+                  srcW = (int) size;
+                  srcH = (int) size;
                 }
 
                 if (image != null) {
@@ -150,30 +142,46 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
                     int red, green, blue, pixel, alpha;
                     int[] pixels = new int[width * height];
                     scaledBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-                    for (int i = 0; i < pixels.length; i++) {
-                        pixel = pixels[i];
 
-                        red = (pixel >> 16) & 0xFF;
-                        green = (pixel >> 8) & 0xFF;
-                        blue = pixel & 0xFF;
+                    double[] precision = coordinates.getPrecision();
+                    int xFilter = (int)(precision[0] * width);
+                    int yFilter = (int)(precision[1] * height);
+
+                    for(int xPoint=0; xPoint < width; xPoint++) {
+                      for(int yPoint=0; yPoint < height; yPoint++) {
+                        c = scaledBitmap.getPixel(xPoint, yPoint);
+
+                        red = Color.red(c);
+                        green = Color.green(c);
+                        blue = Color.blue(c);
+
+                        if (red > 255)
+                            red = 255;
+                        if (green > 255)
+                            green = 255;
 
                         int day = red * 255 + green;
 
-                        red = 255;
-                        green = 255;
-                        blue = 255;
-                        alpha = 100;
+                        // if (day > 0 && day >= minDate && day <= maxDate) {
+                        if (xPoint == xFilter && yPoint == yFilter) {
+                            red = 255;
+                            green = 255;
+                            blue = 255;
+                            alpha = 255;
+                        } else {
+                            alpha = 0;
+                        }
 
-                        pixels[i] = Color.argb(alpha, red, green, blue);
+                        finalBitmap.setPixel(xPoint, yPoint, Color.argb(alpha, red, green, blue));
+                      }
                     }
-                    finalBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
 
-                    stream = new ByteArrayOutputStream();
-                    finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
-                    bitmapData = stream.toByteArray();
-                    return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
+                  stream = new ByteArrayOutputStream();
+                  finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
+                  bitmapData = stream.toByteArray();
+                  return new Tile(TILE_SIZE, TILE_SIZE, bitmapData);
                 } else {
-                    return NO_TILE;
+                  return NO_TILE;
                 }
             } else {
               return NO_TILE;
@@ -273,8 +281,8 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
         }
     }
 
-    public void setCoordinates(double lat, double lng, int[] tile) {
-        this.coordinates = new Coordinates(lat, lng, tile);
+    public void setCoordinates(int[] tile, double[] precision) {
+        this.coordinates = new Coordinates(tile, precision);
         if (tileProvider != null) {
             tileProvider.setCoordinates(coordinates);
         }
@@ -295,6 +303,7 @@ public class AirMapCanvasInteractionUrlTile extends AirMapFeature {
         options.zIndex(zIndex);
         this.tileProvider = new AIRMapCanvasInteractionUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.isConnected, this.coordinates);
         options.tileProvider(this.tileProvider);
+        // options.fadeIn(false);
         return options;
     }
 
