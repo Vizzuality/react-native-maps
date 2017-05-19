@@ -47,6 +47,11 @@ public class AirMapCanvasUrlTileManager extends ViewGroupManager<AirMapCanvasUrl
         view.setMaxZoom(maxZoom);
     }
 
+    @ReactProp(name = "alertType")
+    public void setAlertType(AirMapCanvasUrlTile view, String alertType) {
+        view.setAlertType(alertType);
+    }
+
     @ReactProp(name = "areaId")
     public void setAreaId(AirMapCanvasUrlTile view, String areaId) {
         view.setAreaId(areaId);

@@ -28,16 +28,18 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         private int height;
         private int maxZoom;
         private String areaId;
+        private String alertType;
         private String minDate;
         private String maxDate;
         private boolean isConnected;
-        public AIRMapCanvasUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaId, boolean isConnected, String minDate, String maxDate) {
+        public AIRMapCanvasUrlTileProvider(int width, int height, String urlTemplate, int maxZoom, String areaId, String alertType, boolean isConnected, String minDate, String maxDate) {
             super();
             this.width = width;
             this.height = height;
             this.urlTemplate = urlTemplate;
             this.maxZoom = maxZoom;
             this.areaId = areaId;
+            this.alertType = alertType;
             this.isConnected = isConnected;
             this.minDate = minDate;
             this.maxDate = maxDate;
@@ -89,7 +91,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inPreferredConfig = Bitmap.Config.ARGB_8888;
                 File dir = getContext().getFilesDir();
-                File myFile = new File(dir + "/tiles", areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+                File myFile = new File(dir + "/tiles", areaId + "/" + this.alertType + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
 
                 try {
                     image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
@@ -119,7 +121,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     scaledBitmap = Bitmap.createScaledBitmap (croppedBitmap, scaleSize, scaleSize, false);
                 }
 
-                int width, height, r, g, b, c;
+                int width, height;
                 height = scaledBitmap.getHeight();
                 width = scaledBitmap.getWidth();
 
@@ -142,10 +144,17 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     int day = red * 255 + green;
 
                     if (day > 0 && day >= minDate && day <= maxDate) {
-                        red = 220;
-                        green = 102;
-                        blue = 153;
-                        alpha = 255;
+                        if (this.alertType.equals("viirs")) {
+                            red = 244;
+                            green = 66;
+                            blue = 66;
+                            alpha = 255;
+                        } else {
+                            red = 220;
+                            green = 102;
+                            blue = 153;
+                            alpha = 255;
+                        }
                     } else {
                         alpha = 0;
                     }
@@ -178,6 +187,10 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         public void setIsConnected(boolean isConnected) {
             this.isConnected = isConnected;
         }
+        public void setAlertType(String alertType) {
+            this.alertType = alertType;
+        }
+
     }
 
     private TileOverlayOptions tileOverlayOptions;
@@ -187,6 +200,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
     private String urlTemplate;
     private int maxZoom;
     private String areaId;
+    private String alertType;
     private String minDate;
     private String maxDate;
     private boolean isConnected;
@@ -236,6 +250,16 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
         }
     }
 
+    public void setAlertType(String alertType) {
+        this.alertType = alertType;
+        if (tileProvider != null) {
+            tileProvider.setAlertType(alertType);
+        }
+        if (tileOverlay != null) {
+            tileOverlay.clearTileCache();
+        }
+    }
+
     public void setMinDate(String minDate) {
         this.minDate = minDate;
     }
@@ -261,7 +285,7 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
     private TileOverlayOptions createTileOverlayOptions() {
         TileOverlayOptions options = new TileOverlayOptions();
         options.zIndex(zIndex);
-        this.tileProvider = new AIRMapCanvasUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.isConnected, this.minDate, this.maxDate);
+        this.tileProvider = new AIRMapCanvasUrlTileProvider(256, 256, this.urlTemplate, this.maxZoom, this.areaId, this.alertType, this.isConnected, this.minDate, this.maxDate);
         options.tileProvider(this.tileProvider);
         return options;
     }
