@@ -91,12 +91,14 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inPreferredConfig = Bitmap.Config.ARGB_8888;
                 File dir = getContext().getFilesDir();
-                File myFile = new File(dir + "/tiles", areaId + "/" + this.alertType + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+                File myFile = new File(dir + "/tiles" + "/" + this.alertType, areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
 
                 try {
                     image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
                 } catch (Exception e) {
                     e.printStackTrace();
+
+
                     return NO_TILE;
                 }
             }
@@ -141,20 +143,27 @@ public class AirMapCanvasUrlTile extends AirMapFeature {
                     if (green > 255)
                         green = 255;
 
-                    int day = red * 255 + green;
+                    int day;
+                    if (this.alertType.equals("viirs")) {
+                        day = blue;
+                    } else {
+                        day = red * 255 + green;
+                    }
 
-                    if (day > 0 && day >= minDate && day <= maxDate) {
-                        if (this.alertType.equals("viirs")) {
+                    if(this.alertType.equals("viirs")) {
+                        if (day > 0) {
                             red = 244;
                             green = 66;
                             blue = 66;
                             alpha = 255;
                         } else {
-                            red = 220;
-                            green = 102;
-                            blue = 153;
-                            alpha = 255;
+                            alpha = 0;
                         }
+                    } else if (day > 0 && day >= minDate && day <= maxDate) {
+                        red = 220;
+                        green = 102;
+                        blue = 153;
+                        alpha = 255;
                     } else {
                         alpha = 0;
                     }
