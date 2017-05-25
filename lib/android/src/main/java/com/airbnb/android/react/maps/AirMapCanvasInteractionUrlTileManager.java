@@ -78,7 +78,7 @@ public class AirMapCanvasInteractionUrlTileManager extends ViewGroupManager<AirM
         if (coordinates != null) {
             int[] tile = new int[]{coordinates.getArray("tile").getInt(0), coordinates.getArray("tile").getInt(1), coordinates.getArray("tile").getInt(2)};
             double[] precision = new double[]{coordinates.getArray("precision").getDouble(0), coordinates.getArray("precision").getDouble(1)};
-            view.setCoordinates(tile, precision);
+            view.setCoordinates(new Coordinates(tile, precision));
         }
     }
 

@@ -116,9 +116,10 @@ class CustomTiles extends React.Component {
             zIndex={-1}
             maxZoom={12}
             areaId="Download"
+            alertType="umd_as_it_happen"
             isConnected
-            minDate="2017/01/01"
-            maxDate="2017/03/01"
+            minDate="0"
+            maxDate="3000"
           />
           {hasCoordinates &&
             <MapView.CanvasInteractionUrlTile
@@ -127,9 +128,10 @@ class CustomTiles extends React.Component {
               zIndex={-1}
               maxZoom={12}
               areaId="Download"
+              alertType="umd_as_it_happen"
               isConnected
-              minDate="2017/01/01"
-              maxDate="2017/03/01"
+              minDate="0"
+              maxDate="3000"
             />
           }
         </MapView>
