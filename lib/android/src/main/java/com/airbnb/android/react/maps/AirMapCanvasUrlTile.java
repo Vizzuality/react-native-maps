@@ -32,10 +32,9 @@ public class AirMapCanvasUrlTile extends AirMapCanvasFeature {
                 green = (pixel >> 8) & 0xFF;
                 blue = pixel & 0xFF;
 
-                if (red > 255)
-                    red = 255;
-                if (green > 255)
-                    green = 255;
+                if (red > 255) red = 255;
+                if (green > 255) green = 255;
+                if (blue > 255) blue = 255;
 
                 int day;
                 if (this.alertType != null && this.alertType.equals("viirs")) {
@@ -45,7 +44,7 @@ public class AirMapCanvasUrlTile extends AirMapCanvasFeature {
                 }
 
                 if(this.alertType != null && this.alertType.equals("viirs")) {
-                    if (day > 0) {
+                    if (day > 0 && day >= minDate && day <= maxDate) {
                         red = 244;
                         green = 66;
                         blue = 66;

@@ -37,12 +37,17 @@ public class AirMapCanvasInteractionUrlTile extends AirMapCanvasFeature {
                     green = Color.green(c);
                     blue = Color.blue(c);
 
-                    if (red > 255)
-                        red = 255;
-                    if (green > 255)
-                        green = 255;
+                    if (red > 255) red = 255;
+                    if (green > 255) green = 255;
+                    if (blue > 255) blue = 255;
 
-                    int day = red * 255 + green;
+                    int day;
+                    if (this.alertType != null && this.alertType.equals("viirs")) {
+                        day = blue;
+                    } else {
+                        day = red * 255 + green;
+                    }
+
                     boolean inDay = day > 0 && day >= minDate && day <= maxDate;
                     boolean inXPoint = xPoint >= (xFilter - THRESHOLD) && (xPoint <= xFilter + THRESHOLD);
                     boolean inYPoint = yPoint >= (yFilter - THRESHOLD) && (yPoint <= yFilter + THRESHOLD);
