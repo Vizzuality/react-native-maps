@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.MotionEventCompat;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -462,6 +463,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
     public void addFeature(View child, int index) {
         // Our desired API is to pass up annotations/overlays as children to the mapview component.
         // This is where we intercept them and do the appropriate underlying mapview action.
+
         if (child instanceof AirMapMarker) {
             AirMapMarker annotation = (AirMapMarker) child;
             annotation.addToMap(map);
@@ -488,6 +490,14 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
             AirMapUrlTile urlTileView = (AirMapUrlTile) child;
             urlTileView.addToMap(map);
             features.add(index, urlTileView);
+        } else if (child instanceof AirMapCanvasUrlTile) {
+            AirMapCanvasUrlTile canvasUrlTileView = (AirMapCanvasUrlTile) child;
+            canvasUrlTileView.addToMap(map);
+            features.add(index, canvasUrlTileView);
+        } else if (child instanceof AirMapCanvasInteractionUrlTile) {
+            AirMapCanvasInteractionUrlTile canvasInteractionUrlTileView = (AirMapCanvasInteractionUrlTile) child;
+            canvasInteractionUrlTileView.addToMap(map);
+            features.add(index, canvasInteractionUrlTileView);
         } else {
             ViewGroup children = (ViewGroup) child;
             for (int i = 0; i < children.getChildCount(); i++) {
