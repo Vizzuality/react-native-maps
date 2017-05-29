@@ -61,8 +61,6 @@ public abstract class AirMapCanvasTileProvider implements TileProvider {
 
         if (this.coordinates != null) {
             int[] tile = this.coordinates.getTile();
-            Log.d("tile Position: ", x + "-" + y + "-" + zoom);
-            Log.d("tile given: ", tile[0] + "-" + tile[1] + "-" + tile[2]);
             if(!(tile[0] == x && tile[1] == y && tile[2] == zoom)) {
                 return NO_TILE;
             }

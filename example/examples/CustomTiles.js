@@ -98,7 +98,7 @@ class CustomTiles extends React.Component {
   render() {
     const { region, coordinates } = this.state;
     const hasCoordinates = (coordinates.tile && coordinates.tile.length === 3) || false;
-    console.log(coordinates);
+
     return (
       <View style={styles.container}>
         <MapView

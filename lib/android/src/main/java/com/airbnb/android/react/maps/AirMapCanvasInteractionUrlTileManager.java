@@ -29,7 +29,6 @@ public class AirMapCanvasInteractionUrlTileManager extends ViewGroupManager<AirM
 
     @Override
     public String getName() {
-        Log.d("Map", "Get name");
         return "AIRMapCanvasInteractionUrlTile";
     }
 
