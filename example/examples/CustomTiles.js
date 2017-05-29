@@ -121,7 +121,7 @@ class CustomTiles extends React.Component {
             minDate="0"
             maxDate="3000"
           />
-          {hasCoordinates &&
+          {false && hasCoordinates &&
             <MapView.CanvasInteractionUrlTile
               coordinates={coordinates}
               urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
