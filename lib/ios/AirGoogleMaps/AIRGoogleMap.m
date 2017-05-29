@@ -132,6 +132,10 @@ id regionAsJSON(MKCoordinateRegion region) {
     AIRGoogleMapUrlTile *tile = (AIRGoogleMapUrlTile*)subview;
     tile.tileLayer.map = nil;
     [self.tiles removeObject:tile];
+  } else if ([subview isKindOfClass:[AIRGoogleMapCanvasUrlTile class]]) {
+      AIRGoogleMapCanvasUrlTile *tile = (AIRGoogleMapCanvasUrlTile*)subview;
+      tile.tileLayer.map = nil;
+      [self.tiles removeObject:tile];
   } else {
     NSArray<id<RCTComponent>> *childSubviews = [subview reactSubviews];
     for (int i = 0; i < childSubviews.count; i++) {
