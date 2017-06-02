@@ -96,7 +96,7 @@ public abstract class AirMapCanvasTileProvider implements TileProvider {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             File dir = getParentContext().getFilesDir();
-            File myFile = new File(dir + "/tiles", areaId + "/" + zoomCord + "x" + xCord + "x" + yCord + ".png");
+            File myFile = new File(dir + "/tiles", this.areaId + "/" + this.alertType + "/"+ zoomCord + "x" + xCord + "x" + yCord + ".png");
 
             try {
                 image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
