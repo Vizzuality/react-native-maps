@@ -45,10 +45,19 @@ public class AirMapLocalTile extends AirMapFeature {
             File myFile = new File(dir + "/" + pathUrl);
 
             try {
-                image = BitmapFactory.decodeFile(myFile.getAbsolutePath(), options);
+                image = BitmapFactory.decodeFile(myFile.getAbsolutePath() + ".png", options);
             } catch (Exception e) {
                 e.printStackTrace();
                 return NO_TILE;
+            }
+
+            if (image == null) {
+                try {
+                    image = BitmapFactory.decodeFile(myFile.getAbsolutePath() + ".jpg", options);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return NO_TILE;
+                }
             }
 
             if (image != null) {
