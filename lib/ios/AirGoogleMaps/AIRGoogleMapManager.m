@@ -191,6 +191,9 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
                   withWidth:(nonnull NSNumber *)width
                   withHeight:(nonnull NSNumber *)height
                   withRegion:(MKCoordinateRegion)region
+                  withFormat:(NSString *)format
+                  quality:(CGFloat) quality
+                  result:(NSString *)result
                   withCallback:(RCTResponseSenderBlock)callback)
 {
   [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
@@ -200,7 +203,7 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
     } else {
       AIRGoogleMap *mapView = (AIRGoogleMap *)view;
 
-      // TODO: currently we are ignoring width, height, region
+      // TODO: currently we are ignoring width, height, region and result
 
       UIGraphicsBeginImageContextWithOptions(mapView.frame.size, YES, 0.0f);
       [mapView.layer renderInContext:UIGraphicsGetCurrentContext()];
@@ -208,10 +211,17 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
       UIGraphicsEndImageContext();
 
       NSTimeInterval timeStamp = [[NSDate date] timeIntervalSince1970];
-      NSString *pathComponent = [NSString stringWithFormat:@"Documents/snapshot-%.20lf.png", timeStamp];
+      NSString *pathComponent = [NSString stringWithFormat:@"Documents/snapshot-%.20lf.%@", timeStamp,
+                                 format];
       NSString *filePath = [NSHomeDirectory() stringByAppendingPathComponent: pathComponent];
+      NSData *data;
+      if ([format isEqualToString:@"png"]) {
+        data = UIImagePNGRepresentation(image);
+      }
+      else if([format isEqualToString:@"jpg"]) {
+        data = UIImageJPEGRepresentation(image, quality);
+      }
 
-      NSData *data = UIImagePNGRepresentation(image);
       [data writeToFile:filePath atomically:YES];
       NSDictionary *snapshotData = @{
                                      @"uri": filePath,
