@@ -85,6 +85,7 @@ RCT_EXPORT_VIEW_PROPERTY(maxDelta, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(minDelta, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(legalLabelInsets, UIEdgeInsets)
 RCT_EXPORT_VIEW_PROPERTY(mapType, MKMapType)
+RCT_EXPORT_VIEW_PROPERTY(onMapReady, RCTBubblingEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onChange, RCTBubblingEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onPanDrag, RCTBubblingEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onPress, RCTBubblingEventBlock)
@@ -481,6 +482,8 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
         return ((AIRMapCircle *)overlay).renderer;
     } else if ([overlay isKindOfClass:[AIRMapUrlTile class]]) {
         return ((AIRMapUrlTile *)overlay).renderer;
+    } else if([overlay isKindOfClass:[MKTileOverlay class]]) {
+        return [[MKTileOverlayRenderer alloc] initWithTileOverlay:overlay];
     } else {
         return nil;
     }
@@ -634,10 +637,10 @@ static int kDragCenterContext;
 
     [self _regionChanged:mapView];
 
-    if (mapView.minZoomLevel && zoomLevel < mapView.minZoomLevel) {
+    if (zoomLevel < mapView.minZoomLevel) {
       [self setCenterCoordinate:[mapView centerCoordinate] zoomLevel:mapView.minZoomLevel animated:TRUE mapView:mapView];
     }
-    else if (mapView.maxZoomLevel && zoomLevel > mapView.maxZoomLevel) {
+    else if (zoomLevel > mapView.maxZoomLevel) {
       [self setCenterCoordinate:[mapView centerCoordinate] zoomLevel:mapView.maxZoomLevel animated:TRUE mapView:mapView];
     }
 
@@ -662,6 +665,8 @@ static int kDragCenterContext;
 {
     [mapView finishLoading];
     [mapView cacheViewIfNeeded];
+    
+    mapView.onMapReady(@{});
 }
 
 #pragma mark Private
@@ -809,7 +814,7 @@ static int kDragCenterContext;
     double centerPixelY = [AIRMapManager latitudeToPixelSpaceY:centerCoordinate.latitude];
 
     // determine the scale value from the zoom level
-    double zoomExponent = 20 - zoomLevel;
+    double zoomExponent = AIRMapMaxZoomLevel - zoomLevel;
     double zoomScale = pow(2, zoomExponent);
 
     // scale the map’s size in pixel space
@@ -845,7 +850,7 @@ static int kDragCenterContext;
                     mapView:(AIRMap *)mapView
 {
     // clamp large numbers to 28
-    zoomLevel = MIN(zoomLevel, 28);
+    zoomLevel = MIN(zoomLevel, AIRMapMaxZoomLevel);
 
     // use the zoom level to compute the region
     MKCoordinateSpan span = [self coordinateSpanWithMapView:mapView centerCoordinate:centerCoordinate andZoomLevel:zoomLevel];
@@ -869,7 +874,7 @@ static int kDragCenterContext;
 	double centerPixelY = [AIRMapManager latitudeToPixelSpaceY:centerCoordinate.latitude];
 
 	// determine the scale value from the zoom level
-	double zoomExponent = 20 - zoomLevel;
+	double zoomExponent = AIRMapMaxZoomLevel - zoomLevel;
 	double zoomScale = pow(2, zoomExponent);
 
 	// scale the map’s size in pixel space
@@ -923,7 +928,7 @@ static int kDragCenterContext;
     CGSize mapSizeInPixels = mapView.bounds.size;
     double zoomScale = scaledMapWidth / mapSizeInPixels.width;
     double zoomExponent = log(zoomScale) / log(2);
-    double zoomLevel = 20 - zoomExponent;
+    double zoomLevel = AIRMapMaxZoomLevel - zoomExponent;
 
     return zoomLevel;
 }
