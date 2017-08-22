@@ -203,7 +203,7 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
     } else {
       AIRGoogleMap *mapView = (AIRGoogleMap *)view;
 
-      // TODO: currently we are ignoring width, height, region, quality and result
+      // TODO: currently we are ignoring width, height, region and result
 
       UIGraphicsBeginImageContextWithOptions(mapView.frame.size, YES, 0.0f);
       [mapView.layer renderInContext:UIGraphicsGetCurrentContext()];
@@ -216,10 +216,10 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
       NSString *filePath = [NSHomeDirectory() stringByAppendingPathComponent: pathComponent];
       NSData *data;
       if ([format isEqualToString:@"png"]) {
-        data = UIImagePNGRepresentation(compositeImage);
+        data = UIImagePNGRepresentation(image);
       }
       else if([format isEqualToString:@"jpg"]) {
-        data = UIImageJPEGRepresentation(compositeImage, quality);
+        data = UIImageJPEGRepresentation(image, quality);
       }
 
       [data writeToFile:filePath atomically:YES];
