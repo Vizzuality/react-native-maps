@@ -22,6 +22,7 @@ public class AirMapLocalTile extends AirMapFeature {
         private int height;
         private String localTemplate;
         private int maxZoom;
+        private static final int MEM_MAX_SIZE = 8;
 
         public AIRMapLocalTileProvider(int width, int height, String localTemplate, int maxZoom) {
             this.width = width;
@@ -40,14 +41,14 @@ public class AirMapLocalTile extends AirMapFeature {
             try {
                 image = BitmapFactory.decodeFile(myFile.getAbsolutePath() + ".png", options);
             } catch (Exception e) {
-                //e.printStackTrace();
+                e.printStackTrace();
             }
 
             if (image == null) {
                 try {
                     image = BitmapFactory.decodeFile(myFile.getAbsolutePath() + ".jpg", options);
                 } catch (Exception e) {
-                    //e.printStackTrace();
+                    e.printStackTrace();
                 }
             }
             return image;
@@ -59,11 +60,9 @@ public class AirMapLocalTile extends AirMapFeature {
             int cropSize = (tileSize / relation);
             int cropX = (x % relation) * (tileSize / relation);
             int cropY = (y % relation) * (tileSize / relation);
-
-            Log.i("*************", Integer.toString(cropX));
-            Log.i("*************", Integer.toString(cropY));
+            int scaleSize = (relation <= MEM_MAX_SIZE) ? tileSize * relation : tileSize * MEM_MAX_SIZE;
             Bitmap croppedBitmap = Bitmap.createBitmap(image, cropX, cropY, cropSize, cropSize);
-            return Bitmap.createScaledBitmap(croppedBitmap, tileSize * relation, tileSize * relation, false);
+            return Bitmap.createScaledBitmap(croppedBitmap, scaleSize, scaleSize, false);
         }
 
         @Override
@@ -86,7 +85,6 @@ public class AirMapLocalTile extends AirMapFeature {
                     .replace("{x}", Integer.toString(xCoord))
                     .replace("{y}", Integer.toString(yCoord))
                     .replace("{z}", Integer.toString(zCoord));
-            Log.i("::::::::::::", pathUrl);
             image = this.readTileFromFile(pathUrl);
             if (image == null) {
                 return NO_TILE;
