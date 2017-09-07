@@ -45,4 +45,10 @@ public class AirMapLocalTileManager extends ViewGroupManager<AirMapLocalTile> {
         view.setZIndex(zIndex);
     }
 
+
+    @ReactProp(name = "maxZoom", defaultInt = 12)
+    public void setMaxZoom(AirMapLocalTile view, int maxZoom) {
+        view.setMaxZoom(maxZoom);
+    }
+
 }
