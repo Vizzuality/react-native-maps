@@ -4,21 +4,16 @@ import {
   View,
   Text,
   Dimensions,
-  Platform,
-  PermissionsAndroid,
 } from 'react-native';
 
-import MapView, { MAP_TYPES, PROVIDER_DEFAULT } from 'react-native-maps';
-
-const geoViewport = require('@mapbox/geo-viewport');
-const tilebelt = require('@mapbox/tilebelt');
+import MapView, { MAP_TYPES, PROVIDER_DEFAULT, ProviderPropType, UrlTile } from 'react-native-maps';
 
 const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
-const LATITUDE = -8.380882;
-const LONGITUDE = -74.448166;
-const LATITUDE_DELTA = 0.2222;
+const LATITUDE = 37.78825;
+const LONGITUDE = -122.4324;
+const LATITUDE_DELTA = 0.0922;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 class CustomTiles extends React.Component {
@@ -26,10 +21,6 @@ class CustomTiles extends React.Component {
     super(props, context);
 
     this.state = {
-      coordinates: {
-        tile: [], // tile coordinates x, y, z + precision x, y
-        precision: [], // tile precision x, y
-      },
       region: {
         latitude: LATITUDE,
         longitude: LONGITUDE,
@@ -42,98 +33,23 @@ class CustomTiles extends React.Component {
   get mapType() {
     // MapKit does not support 'none' as a base map
     return this.props.provider === PROVIDER_DEFAULT ?
-      MAP_TYPES.STANDARD : MAP_TYPES.NONE;
-  }
-
-  componentDidMount() {
-    if (Platform.OS === 'android') {
-      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
-      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
-    }
-  }
-
-  getMapZoom() {
-    const position = this.state.region;
-
-    const bounds = [
-      position.longitude - (position.longitudeDelta / 2),
-      position.latitude - (position.latitudeDelta / 2),
-      position.longitude + (position.longitudeDelta / 2),
-      position.latitude + (position.latitudeDelta / 2),
-    ];
-
-    return geoViewport.viewport(bounds, [width, height], 0, 21, 256).zoom || 0;
-  }
-
-  onRegionChangeComplete = (region) => {
-    this.updateRegion(region);
-  }
-
-  onRegionChange = (region) => {
-    if (this.onRegionChangeTimer) {
-      clearTimeout(this.onRegionChangeTimer);
-    }
-    this.onRegionChangeTimer = setTimeout(() => {
-      this.updateRegion(region);
-    }, 200);
-  }
-
-  onMapPress = (e) => {
-    const coordinates = e.nativeEvent.coordinate;
-    const zoom = this.getMapZoom();
-    const tile = tilebelt.pointToTile(coordinates.longitude, coordinates.latitude, zoom, true);
-
-    this.setState({
-      coordinates: {
-        tile: [tile[0], tile[1], tile[2]],
-        precision: [tile[3], tile[4]],
-      },
-    });
-  }
-
-  updateRegion = (region) => {
-    this.setState({ region });
+           MAP_TYPES.STANDARD : MAP_TYPES.NONE;
   }
 
   render() {
-    const { region, coordinates } = this.state;
-    const hasCoordinates = (coordinates.tile && coordinates.tile.length === 3) || false;
-
+    const { region } = this.state;
     return (
       <View style={styles.container}>
         <MapView
           provider={this.props.provider}
           mapType={this.mapType}
           style={styles.map}
-          mapType="hybrid"
-          onPress={this.onMapPress}
           initialRegion={region}
-          onRegionChange={this.onRegionChange}
-          onRegionChangeComplete={this.onRegionChangeComplete}
         >
-          <MapView.CanvasUrlTile
-            urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
+          <UrlTile
+            urlTemplate="http://c.tile.stamen.com/watercolor/{z}/{x}/{y}.jpg"
             zIndex={-1}
-            maxZoom={12}
-            areaId="Download"
-            alertType="umd_as_it_happen"
-            isConnected
-            minDate="0"
-            maxDate="3000"
           />
-          {hasCoordinates &&
-            <MapView.CanvasInteractionUrlTile
-              coordinates={coordinates}
-              urlTemplate="http://wri-tiles.s3.amazonaws.com/glad_prod/tiles/{z}/{x}/{y}.png"
-              zIndex={-1}
-              maxZoom={12}
-              areaId="Download"
-              alertType="umd_as_it_happen"
-              isConnected
-              minDate="0"
-              maxDate="3000"
-            />
-          }
         </MapView>
         <View style={styles.buttonContainer}>
           <View style={styles.bubble}>
@@ -146,7 +62,7 @@ class CustomTiles extends React.Component {
 }
 
 CustomTiles.propTypes = {
-  provider: MapView.ProviderPropType,
+  provider: ProviderPropType,
 };
 
 const styles = StyleSheet.create({
@@ -190,4 +106,5 @@ const styles = StyleSheet.create({
   },
 });
 
-module.exports = CustomTiles;
+export default CustomTiles;
+

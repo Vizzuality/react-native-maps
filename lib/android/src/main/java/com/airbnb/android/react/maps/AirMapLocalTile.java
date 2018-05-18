@@ -13,61 +13,29 @@ import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class AirMapLocalTile extends AirMapFeature {
 
     class AIRMapLocalTileProvider implements TileProvider {
-        private int width;
-        private int height;
-        private String localTemplate;
         private int maxZoom;
         private static final int MEM_MAX_SIZE = 8;
+        private static final int BUFFER_SIZE = 16 * 1024;
+        private int tileSize;
+        private String pathTemplate;
 
-        public AIRMapLocalTileProvider(int width, int height, String localTemplate, int maxZoom) {
-            this.width = width;
-            this.height = height;
-            this.localTemplate = localTemplate;
+
+        public AIRMapLocalTileProvider(int tileSizet, String pathTemplate, int maxZoom) {
+            this.tileSize = tileSizet;
+            this.pathTemplate = pathTemplate;
             this.maxZoom = maxZoom;
-        }
-
-        private Bitmap readTileFromFile(String pathUrl) {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-            File dir = getContext().getFilesDir();
-            File myFile = new File(dir + "/" + pathUrl);
-            Bitmap image = null;
-
-            try {
-                image = BitmapFactory.decodeFile(myFile.getAbsolutePath() + ".png", options);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (image == null) {
-                try {
-                    image = BitmapFactory.decodeFile(myFile.getAbsolutePath() + ".jpg", options);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            return image;
-        }
-
-        private Bitmap getRescaledTileBitmap(Bitmap image, int x, int y, int z, int tileSize) {
-            int zSteps = z - this.maxZoom;
-            int relation = (int) Math.pow(2, zSteps);
-            int cropSize = (tileSize / relation);
-            int cropX = (x % relation) * (tileSize / relation);
-            int cropY = (y % relation) * (tileSize / relation);
-            int scaleSize = (relation <= MEM_MAX_SIZE) ? tileSize * relation : tileSize * MEM_MAX_SIZE;
-            Bitmap croppedBitmap = Bitmap.createBitmap(image, cropX, cropY, cropSize, cropSize);
-            return Bitmap.createScaledBitmap(croppedBitmap, scaleSize, scaleSize, false);
         }
 
         @Override
         public Tile getTile(int x, int y, int zoom) {
-            Bitmap image;
+            byte[] image = readTileImage(x, y, zoom);
             int xCoord = x;
             int yCoord = y;
             int zCoord = zoom;
@@ -81,37 +49,84 @@ public class AirMapLocalTile extends AirMapFeature {
                 zCoord = this.maxZoom;
             }
 
-            String pathUrl = this.localTemplate
-                    .replace("{x}", Integer.toString(xCoord))
-                    .replace("{y}", Integer.toString(yCoord))
-                    .replace("{z}", Integer.toString(zCoord));
-            image = this.readTileFromFile(pathUrl);
             if (image == null) {
-                return NO_TILE;
+                return TileProvider.NO_TILE;
             }
 
-            Bitmap finalBitmap = null;
             if (shouldRescaleTile) {
-                finalBitmap = this.getRescaledTileBitmap(image, x, y, zoom, this.width);
-            } else {
-                finalBitmap = Bitmap.createBitmap(image , 0 , 0, this.width, this.height);
+                Bitmap finalBitmap = this.getRescaledTileBitmap(image, x, y, zoom);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
+                byte[] bitmapData = stream.toByteArray();
+                return new Tile(this.width, this.height, bitmapData);
             }
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
-            byte[] bitmapData = stream.toByteArray();
-            return new Tile(this.width, this.height, bitmapData);
+            return new Tile(this.tileSize, this.tileSize, image);
         }
 
-        public void setLocalTemplate(String localTemplate) {
-            this.localTemplate = localTemplate;
+        public void setPathTemplate(String pathTemplate) {
+            this.pathTemplate = pathTemplate;
+        }
+
+        public void setTileSize(int tileSize) {
+            this.tileSize = tileSize;
+        }
+
+        private byte[] readTileImage(int x, int y, int zoom) {
+            InputStream in = null;
+            ByteArrayOutputStream buffer = null;
+            File file = new File(getTileFilename(x, y, zoom));
+
+            try {
+                in = new FileInputStream(file);
+                buffer = new ByteArrayOutputStream();
+
+                int nRead;
+                byte[] data = new byte[BUFFER_SIZE];
+
+                while ((nRead = in.read(data, 0, BUFFER_SIZE)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+                buffer.flush();
+
+                return buffer.toByteArray();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            } catch (OutOfMemoryError e) {
+                e.printStackTrace();
+                return null;
+            } finally {
+                if (in != null) try { in.close(); } catch (Exception ignored) {}
+                if (buffer != null) try { buffer.close(); } catch (Exception ignored) {}
+            }
+        }
+
+        private String getTileFilename(int x, int y, int zoom) {
+            String s = this.pathTemplate
+                    .replace("{x}", Integer.toString(x))
+                    .replace("{y}", Integer.toString(y))
+                    .replace("{z}", Integer.toString(zoom));
+            return s;
+        }
+
+        private Bitmap getRescaledTileBitmap(Bitmap image, int x, int y, int z) {
+            int zSteps = z - this.maxZoom;
+            int relation = (int) Math.pow(2, zSteps);
+            int cropSize = (this.tileSize / relation);
+            int cropX = (x % relation) * (this.tileSize / relation);
+            int cropY = (y % relation) * (this.tileSize / relation);
+            int scaleSize = (relation <= MEM_MAX_SIZE) ? tileSize * relation : tileSize * MEM_MAX_SIZE;
+            Bitmap croppedBitmap = Bitmap.createBitmap(image, cropX, cropY, cropSize, cropSize);
+            return Bitmap.createScaledBitmap(croppedBitmap, scaleSize, scaleSize, false);
         }
     }
 
     private TileOverlayOptions tileOverlayOptions;
     private TileOverlay tileOverlay;
-    private AIRMapLocalTileProvider tileProvider;
+    private AirMapLocalTile.AIRMapLocalTileProvider tileProvider;
 
-    private String localTemplate;
+    private String pathTemplate;
+    private float tileSize;
     private float zIndex;
     private int maxZoom;
 
@@ -119,10 +134,10 @@ public class AirMapLocalTile extends AirMapFeature {
         super(context);
     }
 
-    public void setLocalTemplate(String localTemplate) {
-        this.localTemplate = localTemplate;
+    public void setPathTemplate(String pathTemplate) {
+        this.pathTemplate = pathTemplate;
         if (tileProvider != null) {
-            tileProvider.setLocalTemplate(localTemplate);
+            tileProvider.setPathTemplate(pathTemplate);
         }
         if (tileOverlay != null) {
             tileOverlay.clearTileCache();
@@ -140,6 +155,12 @@ public class AirMapLocalTile extends AirMapFeature {
         this.maxZoom = maxZoom;
     }
 
+    public void setTileSize(float tileSize) {
+        this.tileSize = tileSize;
+        if (tileProvider != null) {
+            tileProvider.setTileSize((int)tileSize);
+        }
+    }
     public TileOverlayOptions getTileOverlayOptions() {
         if (tileOverlayOptions == null) {
             tileOverlayOptions = createTileOverlayOptions();
@@ -150,7 +171,7 @@ public class AirMapLocalTile extends AirMapFeature {
     private TileOverlayOptions createTileOverlayOptions() {
         TileOverlayOptions options = new TileOverlayOptions();
         options.zIndex(zIndex);
-        this.tileProvider = new AIRMapLocalTileProvider(256, 256, this.localTemplate, this.maxZoom);
+        this.tileProvider = new AirMapLocalTile.AIRMapLocalTileProvider((int)this.tileSize, this.pathTemplate, this.maxZoom);
         options.tileProvider(this.tileProvider);
         return options;
     }

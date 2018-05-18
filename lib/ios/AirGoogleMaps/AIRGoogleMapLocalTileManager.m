@@ -20,7 +20,8 @@ RCT_EXPORT_MODULE()
   return tileLayer;
 }
 
-RCT_EXPORT_VIEW_PROPERTY(localTemplate, NSString)
+RCT_EXPORT_VIEW_PROPERTY(pathTemplate, NSString)
 RCT_EXPORT_VIEW_PROPERTY(zIndex, int)
+RCT_EXPORT_VIEW_PROPERTY(tileSize, float)
 
 @end
