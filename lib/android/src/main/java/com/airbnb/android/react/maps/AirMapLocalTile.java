@@ -36,29 +36,19 @@ public class AirMapLocalTile extends AirMapFeature {
         @Override
         public Tile getTile(int x, int y, int zoom) {
             byte[] image = readTileImage(x, y, zoom);
-            int xCoord = x;
-            int yCoord = y;
-            int zCoord = zoom;
             boolean shouldRescaleTile = (zoom > this.maxZoom);
-
-            if (shouldRescaleTile) {
-                int zSteps = zCoord - this.maxZoom;
-                int relation = (int) Math.pow(2, zSteps) ;
-                xCoord = (int)(x / relation);
-                yCoord = (int)(y / relation);
-                zCoord = this.maxZoom;
-            }
 
             if (image == null) {
                 return TileProvider.NO_TILE;
             }
 
             if (shouldRescaleTile) {
-                Bitmap finalBitmap = this.getRescaledTileBitmap(image, x, y, zoom);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(image, 0, image.length);
+                Bitmap finalBitmap = this.getRescaledTileBitmap(bitmap, x, y, zoom);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 finalBitmap.compress(Bitmap.CompressFormat.PNG, 0, stream);
                 byte[] bitmapData = stream.toByteArray();
-                return new Tile(this.width, this.height, bitmapData);
+                return new Tile(this.tileSize, this.tileSize, bitmapData);
             }
             return new Tile(this.tileSize, this.tileSize, image);
         }
@@ -72,9 +62,22 @@ public class AirMapLocalTile extends AirMapFeature {
         }
 
         private byte[] readTileImage(int x, int y, int zoom) {
+            int xCoord = x;
+            int yCoord = y;
+            int zCoord = zoom;
+            boolean shouldRescaleTile = (zoom > this.maxZoom);
+            if (shouldRescaleTile) {
+                int zSteps = zCoord - this.maxZoom;
+                int relation = (int) Math.pow(2, zSteps) ;
+                xCoord = (x / relation);
+                yCoord = (y / relation);
+                zCoord = this.maxZoom;
+            }
+
             InputStream in = null;
             ByteArrayOutputStream buffer = null;
-            File file = new File(getTileFilename(x, y, zoom));
+            File dir = getContext().getFilesDir();
+            File file = new File(dir + "/" + getTileFilename(xCoord, yCoord, zCoord));
 
             try {
                 in = new FileInputStream(file);
@@ -87,7 +90,6 @@ public class AirMapLocalTile extends AirMapFeature {
                     buffer.write(data, 0, nRead);
                 }
                 buffer.flush();
-
                 return buffer.toByteArray();
             } catch (IOException e) {
                 e.printStackTrace();
