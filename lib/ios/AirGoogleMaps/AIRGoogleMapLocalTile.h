@@ -12,6 +12,6 @@
 @property (nonatomic, assign) NSString *pathTemplate;
 @property (nonatomic, assign) int maxZoom;
 @property (nonatomic, assign) int zIndex;
-@property (nonatomic, assign) CGFloat tileSize;
+@property (nonatomic, assign) NSInteger tileSize;
 
 @end

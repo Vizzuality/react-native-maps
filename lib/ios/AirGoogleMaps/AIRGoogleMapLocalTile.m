@@ -6,15 +6,19 @@
 #import "AIRGoogleMapLocalTile.h"
 
 int MEM_MAX_SIZE = 8;
+int MAX_ZOOM = 12;
+NSInteger TILE_SIZE = 256;
 
 @interface LocalTileLayer : GMSSyncTileLayer
 @property NSString* pathTemplate;
+@property int maxZoom;
 @end
 
 @implementation LocalTileLayer
 
 - (id)init:(NSString *)pathTemplate {
   _pathTemplate = pathTemplate;
+  _maxZoom = MAX_ZOOM;
   return self;
 }
 
@@ -23,32 +27,23 @@ int MEM_MAX_SIZE = 8;
 }
 
 - (UIImage *)readTileFromFile: (NSString *)url {
-  NSString *urlPng = [NSString stringWithFormat: @"%@.png", url];
-  NSString *imagePath=[[self applicationDocumentsDirectory] stringByAppendingPathComponent: urlPng];
+  NSString *imagePath=[[self applicationDocumentsDirectory] stringByAppendingPathComponent: url];
 
   NSFileManager *fileManager = [NSFileManager defaultManager];
   BOOL isFileExist = [fileManager fileExistsAtPath: imagePath];
   if (isFileExist) {
     return [UIImage imageWithContentsOfFile:imagePath];
-  } else {
-    NSString *urlJpg = [NSString stringWithFormat: @"%@.jpg", url];
-    NSString *imagePath=[[self applicationDocumentsDirectory] stringByAppendingPathComponent: urlJpg];
-    BOOL isFileExist = [fileManager fileExistsAtPath: imagePath];
-    if (isFileExist) {
-      return [UIImage imageWithContentsOfFile: imagePath];
-    }
   }
   return nil;
 }
 
 - (UIImage *)getRescaledTileBitmap: (UIImage*)image x:(int)x y:(int)y z:(int)z {
-  int zSteps = z - _maxZoom;
+  int zSteps = z - self.maxZoom;
   int relation = (int) pow(2, zSteps);
-  int cropSize = (_tileSize / relation);
-  int cropX = (fmod(x, relation)) * (_tileSize / relation);
-  int cropY = (fmod(y, relation)) * (_tileSize / relation);
-  int scaleSize = (relation <= MEM_MAX_SIZE) ? _tileSize * relation : _tileSize * MEM_MAX_SIZE;
-
+  int cropSize = ((int)self.tileSize / relation);
+  int cropX = (fmod(x, relation)) * (self.tileSize / relation);
+  int cropY = (fmod(y, relation)) * (self.tileSize / relation);
+  int scaleSize = (relation <= MEM_MAX_SIZE) ? (int)self.tileSize * relation : (int)self.tileSize * MEM_MAX_SIZE;
 
   CGRect cropRect = CGRectMake(cropX, cropY, cropSize, cropSize);
   CGImageRef croppedRef = CGImageCreateWithImageInRect([image CGImage], cropRect);
@@ -66,22 +61,20 @@ int MEM_MAX_SIZE = 8;
   NSUInteger xCoord = x;
   NSUInteger yCoord = y;
   int zCoord = (int)zoom;
-  bool shouldRescaleTile =  (zoom > maxZoom);
+  bool shouldRescaleTile =  (zoom > self.maxZoom);
 
   if (shouldRescaleTile) {
-    int zSteps = (int)zCoord - maxZoom;
+    int zSteps = (int)zCoord - self.maxZoom;
     int relation = (int) pow(2, zSteps) ;
     xCoord = (int)(x / relation);
     yCoord = (int)(y / relation);
-    zCoord = _maxZoom;
+    zCoord = self.maxZoom;
   }
 
   NSString *url = _pathTemplate;
   url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)xCoord]];
   url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)yCoord]];
   url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%d", zCoord]];
-
-  NSLog(@"%@", url);
 
   UIImage *image = [self readTileFromFile:url];
   if (image == nil) {
@@ -108,6 +101,7 @@ int MEM_MAX_SIZE = 8;
 {
   _pathTemplate = pathTemplate;
   _tileLayer = [[LocalTileLayer alloc] init:_pathTemplate];
+  _tileLayer.tileSize = TILE_SIZE;
 }
 
 - (void)setMaxZoom:(int)maxZoom
@@ -115,8 +109,9 @@ int MEM_MAX_SIZE = 8;
   _maxZoom = maxZoom;
 }
 
-- (void)setTileSize:(int)maxZoom
+- (void)setTileSize:(NSInteger)tileSize
 {
   _tileSize = tileSize;
+  _tileLayer.tileSize = tileSize;
 }
 @end
