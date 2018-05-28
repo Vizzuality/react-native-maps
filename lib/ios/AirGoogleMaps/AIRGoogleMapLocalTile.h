@@ -9,8 +9,9 @@
 @interface AIRGoogleMapLocalTile : UIView
 
 @property (nonatomic, strong) GMSSyncTileLayer *tileLayer;
-@property (nonatomic, assign) NSString *localTemplate;
+@property (nonatomic, assign) NSString *pathTemplate;
 @property (nonatomic, assign) int maxZoom;
 @property (nonatomic, assign) int zIndex;
+@property (nonatomic, assign) NSInteger tileSize;
 
 @end

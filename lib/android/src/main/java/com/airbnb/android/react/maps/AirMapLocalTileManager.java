@@ -10,6 +10,9 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 
+/**
+ * Created by zavadpe on 30/11/2017.
+ */
 public class AirMapLocalTileManager extends ViewGroupManager<AirMapLocalTile> {
     private DisplayMetrics metrics;
 
@@ -35,16 +38,20 @@ public class AirMapLocalTileManager extends ViewGroupManager<AirMapLocalTile> {
         return new AirMapLocalTile(context);
     }
 
-    @ReactProp(name = "localTemplate")
-    public void setLocalTemplate(AirMapLocalTile view, String localTemplate) {
-        view.setLocalTemplate(localTemplate);
+    @ReactProp(name = "pathTemplate")
+    public void setPathTemplate(AirMapLocalTile view, String pathTemplate) {
+        view.setPathTemplate(pathTemplate);
+    }
+
+    @ReactProp(name = "tileSize", defaultFloat = 256f)
+    public void setTileSize(AirMapLocalTile view, float tileSize) {
+        view.setTileSize(tileSize);
     }
 
     @ReactProp(name = "zIndex", defaultFloat = -1.0f)
     public void setZIndex(AirMapLocalTile view, float zIndex) {
         view.setZIndex(zIndex);
     }
-
 
     @ReactProp(name = "maxZoom", defaultInt = 12)
     public void setMaxZoom(AirMapLocalTile view, int maxZoom) {

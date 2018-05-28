@@ -6,16 +6,19 @@
 #import "AIRGoogleMapLocalTile.h"
 
 int MEM_MAX_SIZE = 8;
-int maxZoom = 12;
+int MAX_ZOOM = 12;
+NSInteger TILE_SIZE = 256;
 
 @interface LocalTileLayer : GMSSyncTileLayer
-@property NSString* localTemplate;
+@property NSString* pathTemplate;
+@property int maxZoom;
 @end
 
 @implementation LocalTileLayer
 
-- (id)init:(NSString *)localTemplate {
-  _localTemplate = localTemplate;
+- (id)init:(NSString *)pathTemplate {
+  _pathTemplate = pathTemplate;
+  _maxZoom = MAX_ZOOM;
   return self;
 }
 
@@ -24,36 +27,27 @@ int maxZoom = 12;
 }
 
 - (UIImage *)readTileFromFile: (NSString *)url {
-  NSString *urlPng = [NSString stringWithFormat: @"%@.png", url];
-  NSString *imagePath=[[self applicationDocumentsDirectory] stringByAppendingPathComponent: urlPng];
-  
+  NSString *imagePath=[[self applicationDocumentsDirectory] stringByAppendingPathComponent: url];
+
   NSFileManager *fileManager = [NSFileManager defaultManager];
   BOOL isFileExist = [fileManager fileExistsAtPath: imagePath];
   if (isFileExist) {
     return [UIImage imageWithContentsOfFile:imagePath];
-  } else {
-    NSString *urlJpg = [NSString stringWithFormat: @"%@.jpg", url];
-    NSString *imagePath=[[self applicationDocumentsDirectory] stringByAppendingPathComponent: urlJpg];
-    BOOL isFileExist = [fileManager fileExistsAtPath: imagePath];
-    if (isFileExist) {
-      return [UIImage imageWithContentsOfFile: imagePath];
-    }
   }
   return nil;
 }
 
-- (UIImage *)getRescaledTileBitmap: (UIImage*)image x:(int)x y:(int)y z:(int)z tileSize:(int)tileSize {
-  int zSteps = z - maxZoom;
+- (UIImage *)getRescaledTileBitmap: (UIImage*)image x:(int)x y:(int)y z:(int)z {
+  int zSteps = z - self.maxZoom;
   int relation = (int) pow(2, zSteps);
-  int cropSize = (tileSize / relation);
-  int cropX = (fmod(x, relation)) * (tileSize / relation);
-  int cropY = (fmod(y, relation)) * (tileSize / relation);
-  int scaleSize = (relation <= MEM_MAX_SIZE) ? tileSize * relation : tileSize * MEM_MAX_SIZE;
-  
+  int cropSize = ((int)self.tileSize / relation);
+  int cropX = (fmod(x, relation)) * (self.tileSize / relation);
+  int cropY = (fmod(y, relation)) * (self.tileSize / relation);
+  int scaleSize = (relation <= MEM_MAX_SIZE) ? (int)self.tileSize * relation : (int)self.tileSize * MEM_MAX_SIZE;
 
   CGRect cropRect = CGRectMake(cropX, cropY, cropSize, cropSize);
   CGImageRef croppedRef = CGImageCreateWithImageInRect([image CGImage], cropRect);
-  
+
   CGSize size = CGSizeMake(scaleSize, scaleSize);
   UIGraphicsBeginImageContextWithOptions(size, NO, 1.0);
   [[UIImage imageWithCGImage:croppedRef] drawInRect:CGRectMake(0, 0, size.width, size.height)];
@@ -67,29 +61,27 @@ int maxZoom = 12;
   NSUInteger xCoord = x;
   NSUInteger yCoord = y;
   int zCoord = (int)zoom;
-  bool shouldRescaleTile =  (zoom > maxZoom);
-  
+  bool shouldRescaleTile =  (zoom > self.maxZoom);
+
   if (shouldRescaleTile) {
-    int zSteps = (int)zCoord - maxZoom;
+    int zSteps = (int)zCoord - self.maxZoom;
     int relation = (int) pow(2, zSteps) ;
     xCoord = (int)(x / relation);
     yCoord = (int)(y / relation);
-    zCoord = maxZoom;
+    zCoord = self.maxZoom;
   }
-  
-  NSString *url = _localTemplate;
+
+  NSString *url = _pathTemplate;
   url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)xCoord]];
   url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)yCoord]];
   url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%d", zCoord]];
-  
-  NSLog(@"%@", url);
-  
+
   UIImage *image = [self readTileFromFile:url];
   if (image == nil) {
     return kGMSTileLayerNoTile;
   }
   if (shouldRescaleTile) {
-    return [self getRescaledTileBitmap:image x:(int)x y:(int)y z:(int)zoom tileSize:256];
+    return [self getRescaledTileBitmap:image x:(int)x y:(int)y z:(int)zoom];
   } else {
     return image;
   }
@@ -105,14 +97,21 @@ int maxZoom = 12;
   _tileLayer.zIndex = zIndex;
 }
 
-- (void)setLocalTemplate:(NSString *)localTemplate
+- (void)setPathTemplate:(NSString *)pathTemplate
 {
-  _localTemplate = localTemplate;
-  _tileLayer = [[LocalTileLayer alloc] init:_localTemplate];
+  _pathTemplate = pathTemplate;
+  _tileLayer = [[LocalTileLayer alloc] init:_pathTemplate];
+  _tileLayer.tileSize = TILE_SIZE;
 }
 
 - (void)setMaxZoom:(int)maxZoom
 {
   _maxZoom = maxZoom;
+}
+
+- (void)setTileSize:(NSInteger)tileSize
+{
+  _tileSize = tileSize;
+  _tileLayer.tileSize = tileSize;
 }
 @end

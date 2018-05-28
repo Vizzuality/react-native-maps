@@ -17,6 +17,8 @@
 #import "AIRMapCircle.h"
 #import <QuartzCore/QuartzCore.h>
 #import "AIRMapUrlTile.h"
+#import "AIRMapLocalTile.h"
+#import "AIRMapOverlay.h"
 
 const CLLocationDegrees AIRMapDefaultSpan = 0.005;
 const NSTimeInterval AIRMapRegionChangeObserveInterval = 0.1;
@@ -92,6 +94,14 @@ const NSInteger AIRMapMaxZoomLevel = 20;
     [_regionChangeObserveTimer invalidate];
 }
 
+-(void)addSubview:(UIView *)view {
+    if([view isKindOfClass:[AIRMapMarker class]]) {
+        [self addAnnotation:(id <MKAnnotation>)view];
+    } else {
+        [super addSubview:view];
+    }
+}
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wobjc-missing-super-calls"
 - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex {
@@ -106,9 +116,16 @@ const NSInteger AIRMapMaxZoomLevel = 20;
         ((AIRMapPolygon *)subview).map = self;
         [self addOverlay:(id<MKOverlay>)subview];
     } else if ([subview isKindOfClass:[AIRMapCircle class]]) {
+        ((AIRMapCircle *)subview).map = self;
         [self addOverlay:(id<MKOverlay>)subview];
     } else if ([subview isKindOfClass:[AIRMapUrlTile class]]) {
         ((AIRMapUrlTile *)subview).map = self;
+        [self addOverlay:(id<MKOverlay>)subview];
+    } else if ([subview isKindOfClass:[AIRMapLocalTile class]]) {
+        ((AIRMapLocalTile *)subview).map = self;
+        [self addOverlay:(id<MKOverlay>)subview];
+    } else if ([subview isKindOfClass:[AIRMapOverlay class]]) {
+        ((AIRMapOverlay *)subview).map = self;
         [self addOverlay:(id<MKOverlay>)subview];
     } else {
         NSArray<id<RCTComponent>> *childSubviews = [subview reactSubviews];
@@ -134,6 +151,10 @@ const NSInteger AIRMapMaxZoomLevel = 20;
     } else if ([subview isKindOfClass:[AIRMapCircle class]]) {
         [self removeOverlay:(id <MKOverlay>) subview];
     } else if ([subview isKindOfClass:[AIRMapUrlTile class]]) {
+        [self removeOverlay:(id <MKOverlay>) subview];
+    } else if ([subview isKindOfClass:[AIRMapLocalTile class]]) {
+        [self removeOverlay:(id <MKOverlay>) subview];
+    } else if ([subview isKindOfClass:[AIRMapOverlay class]]) {
         [self removeOverlay:(id <MKOverlay>) subview];
     } else {
         NSArray<id<RCTComponent>> *childSubviews = [subview reactSubviews];
